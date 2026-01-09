@@ -1,118 +1,286 @@
 // Game State
 const gameState = {
-    money: 100,
-    landPlots: 3,
-    productivityLevel: 1,
+    player: {
+        money: 100,
+        landPlots: [],
+        productivityLevel: 1,
+        totalProfit: 0,
+        landHistory: [],
+        hasUpgraded: false
+    },
+    computer: {
+        money: 100,
+        landPlots: [],
+        productivityLevel: 1,
+        totalProfit: 0,
+        landHistory: [],
+        hasUpgraded: false
+    },
     turn: 1,
+    maxTurns: 20,
     cropsPerPlot: 10,
     cropPrice: 5,
-    landCost: 50,
+    forestCost: 60,
     techCost: 100,
-    maxPlots: 64,
-    landHistory: [],
-    productionHistory: [],
-    initialProduction: 0,
-    hasUpgraded: false,
-    turnsSinceUpgrade: 0
+    gridSize: 8,
+    plots: [],
+    gameOver: false
 };
 
 // Initialize game
 function init() {
-    gameState.initialProduction = gameState.landPlots * gameState.cropsPerPlot * gameState.productivityLevel;
+    initializePlots();
+    assignStartingPlots();
     updateDisplay();
     renderFarmGrid();
     renderChart();
 
     // Event listeners
     document.getElementById('nextTurnBtn').addEventListener('click', nextTurn);
-    document.getElementById('buyLandBtn').addEventListener('click', buyLand);
-    document.getElementById('upgradeProductivityBtn').addEventListener('click', upgradeProductivity);
+    document.getElementById('upgradeProductivityBtn').addEventListener('click', () => upgradeProductivity('player'));
 }
 
-// Next Turn - Harvest and Sell
-function nextTurn() {
-    // Calculate production
-    const totalCrops = gameState.landPlots * gameState.cropsPerPlot * gameState.productivityLevel;
-    const earnings = totalCrops * gameState.cropPrice;
+// Initialize plots (forest, empty, etc.)
+function initializePlots() {
+    const totalPlots = gameState.gridSize * gameState.gridSize;
+    gameState.plots = [];
 
-    gameState.money += earnings;
-    gameState.turn++;
+    for (let i = 0; i < totalPlots; i++) {
+        const row = Math.floor(i / gameState.gridSize);
+        const col = i % gameState.gridSize;
 
-    if (gameState.hasUpgraded) {
-        gameState.turnsSinceUpgrade++;
+        // Create forest plots strategically
+        let type = 'empty';
+        if ((row >= 2 && row <= 5) && (col >= 2 && col <= 5)) {
+            type = 'forest';
+        }
+
+        gameState.plots.push({
+            id: i,
+            type: type,
+            owner: null,
+            row: row,
+            col: col
+        });
     }
+}
+
+// Assign starting plots
+function assignStartingPlots() {
+    // Player gets bottom-left corner plots
+    [0, 1, 8].forEach(id => {
+        gameState.plots[id].type = 'farmland';
+        gameState.plots[id].owner = 'player';
+        gameState.player.landPlots.push(id);
+    });
+
+    // Computer gets top-right corner plots
+    [7, 15, 23].forEach(id => {
+        gameState.plots[id].type = 'farmland';
+        gameState.plots[id].owner = 'computer';
+        gameState.computer.landPlots.push(id);
+    });
+}
+
+// Next Turn
+function nextTurn() {
+    if (gameState.gameOver) return;
+
+    // Player harvest
+    const playerEarnings = calculateEarnings('player');
+    gameState.player.money += playerEarnings;
+    gameState.player.totalProfit += playerEarnings;
+
+    // Computer harvest
+    const computerEarnings = calculateEarnings('computer');
+    gameState.computer.money += computerEarnings;
+    gameState.computer.totalProfit += computerEarnings;
 
     // Record history
-    gameState.landHistory.push(gameState.landPlots);
-    gameState.productionHistory.push(totalCrops);
+    gameState.player.landHistory.push(gameState.player.landPlots.length);
+    gameState.computer.landHistory.push(gameState.computer.landPlots.length);
 
-    // Check for paradox
-    checkParadox();
+    // Computer AI turn
+    computerTurn();
+
+    gameState.turn++;
+
+    // Check for game end
+    if (gameState.turn > gameState.maxTurns) {
+        endGame();
+    }
 
     updateDisplay();
     renderChart();
     updateInsights();
+    checkParadox();
 
-    // Show earnings feedback
-    showFeedback(`Harvested ${totalCrops} crops! Earned $${earnings}`);
+    showFeedback(`Turn ${gameState.turn - 1}: You earned $${playerEarnings}!`);
 }
 
-// Buy Land
-function buyLand() {
-    if (gameState.money >= gameState.landCost && gameState.landPlots < gameState.maxPlots) {
-        gameState.money -= gameState.landCost;
-        gameState.landPlots++;
+// Calculate earnings for a player
+function calculateEarnings(owner) {
+    const data = gameState[owner];
+    const totalCrops = data.landPlots.length * gameState.cropsPerPlot * data.productivityLevel;
+    return totalCrops * gameState.cropPrice;
+}
 
-        // Land gets slightly more expensive
-        gameState.landCost = Math.floor(gameState.landCost * 1.15);
+// Buy Forest Plot
+function buyForestPlot(plotId) {
+    if (gameState.gameOver) return;
 
-        renderFarmGrid();
-        updateDisplay();
-        updateInsights();
+    const plot = gameState.plots[plotId];
+    if (plot.type !== 'forest' || plot.owner !== null) return;
+    if (gameState.player.money < gameState.forestCost) return;
 
-        showFeedback('Purchased new land plot!');
-    }
+    gameState.player.money -= gameState.forestCost;
+    plot.type = 'farmland';
+    plot.owner = 'player';
+    gameState.player.landPlots.push(plotId);
+
+    renderFarmGrid();
+    updateDisplay();
+    updateInsights();
+
+    showFeedback('Converted forest to farmland!');
 }
 
 // Upgrade Productivity
-function upgradeProductivity() {
-    if (gameState.money >= gameState.techCost) {
-        gameState.money -= gameState.techCost;
-        gameState.productivityLevel += 0.5;
-        gameState.hasUpgraded = true;
-        gameState.turnsSinceUpgrade = 0;
+function upgradeProductivity(owner) {
+    if (gameState.gameOver) return;
 
-        // Technology gets more expensive
-        gameState.techCost = Math.floor(gameState.techCost * 1.5);
+    const data = gameState[owner];
+    if (data.money < gameState.techCost) return;
 
-        updateDisplay();
-        updateInsights();
+    data.money -= gameState.techCost;
+    data.productivityLevel += 0.5;
+    data.hasUpgraded = true;
 
-        showFeedback('Technology upgraded! Each plot now produces more crops!');
+    updateDisplay();
+    updateInsights();
+
+    if (owner === 'player') {
+        showFeedback('Technology upgraded! Each plot now produces more!');
     }
+}
+
+// Computer AI Turn
+function computerTurn() {
+    const computer = gameState.computer;
+
+    // AI Strategy: Upgrade tech first, then expand land
+    if (computer.money >= gameState.techCost && computer.productivityLevel < 2.5) {
+        upgradeProductivity('computer');
+    } else if (computer.money >= gameState.forestCost) {
+        // Try to buy a forest plot
+        const availableForests = gameState.plots.filter(p =>
+            p.type === 'forest' && p.owner === null
+        );
+
+        if (availableForests.length > 0) {
+            // Prefer plots closer to existing computer plots
+            const randomForest = availableForests[Math.floor(Math.random() * availableForests.length)];
+            randomForest.type = 'farmland';
+            randomForest.owner = 'computer';
+            computer.landPlots.push(randomForest.id);
+            computer.money -= gameState.forestCost;
+        }
+    }
+}
+
+// End Game
+function endGame() {
+    gameState.gameOver = true;
+
+    const playerProfit = gameState.player.totalProfit;
+    const computerProfit = gameState.computer.totalProfit;
+
+    let message = '';
+    if (playerProfit > computerProfit) {
+        message = `🎉 YOU WIN! 🎉\n\nYour Profit: $${playerProfit}\nComputer Profit: $${computerProfit}\n\nYou earned $${playerProfit - computerProfit} more!`;
+    } else if (computerProfit > playerProfit) {
+        message = `😔 Computer Wins!\n\nYour Profit: $${playerProfit}\nComputer Profit: $${computerProfit}\n\nYou lost by $${computerProfit - playerProfit}`;
+    } else {
+        message = `🤝 It's a TIE!\n\nBoth earned: $${playerProfit}`;
+    }
+
+    // Show paradox analysis
+    const playerLand = gameState.player.landPlots.length;
+    const computerLand = gameState.computer.landPlots.length;
+    const totalLand = playerLand + computerLand;
+    const startLand = 6;
+
+    message += `\n\n🌍 Jevons Paradox Analysis:\nStarting land: ${startLand} plots\nFinal land: ${totalLand} plots\nIncrease: ${totalLand - startLand} plots (${Math.round((totalLand - startLand) / startLand * 100)}%)`;
+
+    message += `\n\nDespite technology making farming more efficient, the total land used INCREASED because it became more profitable!`;
+
+    showGameOverModal(message);
+}
+
+// Show Game Over Modal
+function showGameOverModal(message) {
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+    `;
+
+    const content = document.createElement('div');
+    content.style.cssText = `
+        background: white;
+        padding: 40px;
+        border-radius: 20px;
+        max-width: 600px;
+        text-align: center;
+    `;
+
+    content.innerHTML = `
+        <h2 style="color: #667eea; margin-bottom: 20px;">Game Over!</h2>
+        <pre style="text-align: left; white-space: pre-wrap; font-family: Arial; font-size: 16px; line-height: 1.8;">${message}</pre>
+        <button onclick="location.reload()" style="
+            margin-top: 30px;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+        ">Play Again</button>
+    `;
+
+    modal.appendChild(content);
+    document.body.appendChild(modal);
 }
 
 // Check for Jevons Paradox
 function checkParadox() {
-    if (!gameState.hasUpgraded || gameState.turnsSinceUpgrade < 3) {
+    if (!gameState.player.hasUpgraded && !gameState.computer.hasUpgraded) {
         return;
     }
 
-    const currentProduction = gameState.landPlots * gameState.cropsPerPlot * gameState.productivityLevel;
-    const neededPlots = Math.ceil(gameState.initialProduction / (gameState.cropsPerPlot * gameState.productivityLevel));
+    const totalLand = gameState.player.landPlots.length + gameState.computer.landPlots.length;
+    const startLand = 6;
 
-    // Paradox occurs when we have more land than needed to meet initial production
-    if (gameState.landPlots > neededPlots && gameState.landPlots > 3) {
+    if (totalLand > startLand + 4) {
         const paradoxAlert = document.getElementById('paradoxAlert');
         const paradoxText = document.getElementById('paradoxText');
 
         paradoxAlert.classList.remove('hidden');
         paradoxText.innerHTML = `
-            You started with ${3} plots producing ${gameState.initialProduction} crops total.<br><br>
-            With your current technology (${gameState.productivityLevel}x), you only need
-            <strong>${neededPlots} plots</strong> to produce the same amount!<br><br>
-            But you own <strong>${gameState.landPlots} plots</strong> because it's so profitable!<br><br>
-            This is the <strong>Jevons Paradox</strong>: Efficiency improvements led to MORE land use, not less!
+            Both farmers started with 3 plots each (6 total).<br><br>
+            Now there are <strong>${totalLand} plots</strong> being farmed!<br><br>
+            Even though technology made each plot more productive,
+            the total land use INCREASED by <strong>${totalLand - startLand} plots</strong>!<br><br>
+            This is the <strong>Jevons Paradox</strong>: Efficiency led to MORE resource consumption!
         `;
     }
 }
@@ -120,54 +288,66 @@ function checkParadox() {
 // Update Insights
 function updateInsights() {
     const insights = document.getElementById('insights');
-    const totalProduction = gameState.landPlots * gameState.cropsPerPlot * gameState.productivityLevel;
-    const profitPerTurn = totalProduction * gameState.cropPrice;
-    const profitPerPlot = gameState.cropsPerPlot * gameState.productivityLevel * gameState.cropPrice;
+
+    const playerProfit = gameState.player.totalProfit;
+    const computerProfit = gameState.computer.totalProfit;
+    const turnsLeft = gameState.maxTurns - gameState.turn + 1;
 
     let insightText = '<p><strong>Current Analysis:</strong></p>';
 
-    if (gameState.productivityLevel > 1) {
-        const neededPlots = Math.ceil(gameState.initialProduction / (gameState.cropsPerPlot * gameState.productivityLevel));
-        insightText += `<p>📊 With ${gameState.productivityLevel}x productivity, you only need ${neededPlots} plots to match your initial production of ${gameState.initialProduction} crops.</p>`;
+    insightText += `<p>🏆 <strong>Profit Race:</strong><br>`;
+    if (playerProfit > computerProfit) {
+        insightText += `You're ahead by $${playerProfit - computerProfit}!`;
+    } else if (computerProfit > playerProfit) {
+        insightText += `Computer ahead by $${computerProfit - playerProfit}!`;
+    } else {
+        insightText += `It's tied at $${playerProfit}!`;
+    }
+    insightText += `</p>`;
 
-        if (gameState.landPlots > neededPlots) {
-            insightText += `<p>⚠️ But you own ${gameState.landPlots} plots! Why? Because each plot earns you $${profitPerPlot}/turn, making expansion highly profitable.</p>`;
-        }
+    insightText += `<p>⏰ ${turnsLeft} turns remaining</p>`;
+
+    const totalLand = gameState.player.landPlots.length + gameState.computer.landPlots.length;
+    insightText += `<p>🌍 Total land in use: ${totalLand} plots</p>`;
+
+    if (gameState.player.productivityLevel > 1 || gameState.computer.productivityLevel > 1) {
+        insightText += `<p>📈 Technology has improved, but notice how both farmers keep expanding land use!</p>`;
     }
 
-    insightText += `<p>💵 Profit per turn: $${profitPerTurn}</p>`;
-    insightText += `<p>💰 Profit per plot: $${profitPerPlot}/turn</p>`;
+    const playerEarningsPerTurn = calculateEarnings('player');
+    insightText += `<p>💰 Your earnings per turn: $${playerEarningsPerTurn}</p>`;
 
-    if (gameState.productivityLevel > 1) {
-        insightText += `<p>🔬 Your technology made each acre ${(gameState.productivityLevel * 100).toFixed(0)}% as productive as the original.</p>`;
-    }
-
-    if (gameState.landPlots > 5) {
-        insightText += `<p>🌍 <strong>Real-world parallel:</strong> This is why global agricultural land use has expanded even as crop yields improved dramatically!</p>`;
-    }
+    const forestsLeft = gameState.plots.filter(p => p.type === 'forest').length;
+    insightText += `<p>🌲 Forests remaining: ${forestsLeft} plots</p>`;
 
     insights.innerHTML = insightText;
 }
 
 // Update Display
 function updateDisplay() {
-    document.getElementById('money').textContent = `$${gameState.money}`;
+    // Player stats
+    document.getElementById('playerMoney').textContent = `$${gameState.player.money}`;
+    document.getElementById('playerProfit').textContent = `$${gameState.player.totalProfit}`;
+    document.getElementById('playerLand').textContent = `${gameState.player.landPlots.length} plots`;
+    document.getElementById('playerProductivity').textContent = `${gameState.player.productivityLevel}x`;
 
-    const totalProduction = gameState.landPlots * gameState.cropsPerPlot * gameState.productivityLevel;
-    document.getElementById('totalProduction').textContent = `${totalProduction} crops/turn`;
+    // Computer stats
+    document.getElementById('computerMoney').textContent = `$${gameState.computer.money}`;
+    document.getElementById('computerProfit').textContent = `$${gameState.computer.totalProfit}`;
+    document.getElementById('computerLand').textContent = `${gameState.computer.landPlots.length} plots`;
+    document.getElementById('computerProductivity').textContent = `${gameState.computer.productivityLevel}x`;
 
-    document.getElementById('productivityLevel').textContent = `${gameState.productivityLevel}x`;
-    document.getElementById('landCount').textContent = `${gameState.landPlots} plots`;
-    document.getElementById('turn').textContent = gameState.turn;
-    document.getElementById('landCost').textContent = gameState.landCost;
+    // Game stats
+    document.getElementById('turn').textContent = `${gameState.turn} / ${gameState.maxTurns}`;
+    document.getElementById('forestCost').textContent = gameState.forestCost;
     document.getElementById('techCost').textContent = gameState.techCost;
 
     // Update button states
-    const buyLandBtn = document.getElementById('buyLandBtn');
     const upgradeBtn = document.getElementById('upgradeProductivityBtn');
+    upgradeBtn.disabled = gameState.player.money < gameState.techCost || gameState.gameOver;
 
-    buyLandBtn.disabled = gameState.money < gameState.landCost || gameState.landPlots >= gameState.maxPlots;
-    upgradeBtn.disabled = gameState.money < gameState.techCost;
+    const nextTurnBtn = document.getElementById('nextTurnBtn');
+    nextTurnBtn.disabled = gameState.gameOver;
 }
 
 // Render Farm Grid
@@ -175,26 +355,46 @@ function renderFarmGrid() {
     const grid = document.getElementById('farmGrid');
     grid.innerHTML = '';
 
-    for (let i = 0; i < gameState.maxPlots; i++) {
-        const plot = document.createElement('div');
-        plot.className = 'farm-plot';
+    gameState.plots.forEach((plot) => {
+        const plotDiv = document.createElement('div');
+        plotDiv.className = 'farm-plot';
+        plotDiv.dataset.id = plot.id;
 
-        if (i < gameState.landPlots) {
-            plot.classList.add('active');
-
-            // Show productivity indicator if upgraded
-            if (gameState.productivityLevel > 1) {
+        if (plot.type === 'forest') {
+            plotDiv.classList.add('forest');
+            plotDiv.innerHTML = '🌲';
+            plotDiv.title = `Forest - Click to convert to farmland ($${gameState.forestCost})`;
+            plotDiv.onclick = () => buyForestPlot(plot.id);
+            plotDiv.style.cursor = 'pointer';
+        } else if (plot.type === 'farmland' && plot.owner === 'player') {
+            plotDiv.classList.add('player-farm');
+            plotDiv.innerHTML = '🌾';
+            plotDiv.title = 'Your farm';
+            if (gameState.player.productivityLevel > 1) {
                 const indicator = document.createElement('div');
                 indicator.className = 'productivity-indicator';
-                indicator.textContent = `${gameState.productivityLevel}x`;
-                plot.appendChild(indicator);
+                indicator.textContent = `${gameState.player.productivityLevel}x`;
+                indicator.style.background = 'rgba(76, 175, 80, 0.9)';
+                plotDiv.appendChild(indicator);
+            }
+        } else if (plot.type === 'farmland' && plot.owner === 'computer') {
+            plotDiv.classList.add('computer-farm');
+            plotDiv.innerHTML = '🌽';
+            plotDiv.title = 'Computer farm';
+            if (gameState.computer.productivityLevel > 1) {
+                const indicator = document.createElement('div');
+                indicator.className = 'productivity-indicator';
+                indicator.textContent = `${gameState.computer.productivityLevel}x`;
+                indicator.style.background = 'rgba(244, 67, 54, 0.9)';
+                plotDiv.appendChild(indicator);
             }
         } else {
-            plot.classList.add('empty');
+            plotDiv.classList.add('empty');
+            plotDiv.title = 'Empty land';
         }
 
-        grid.appendChild(plot);
-    }
+        grid.appendChild(plotDiv);
+    });
 }
 
 // Render Chart
@@ -204,14 +404,13 @@ function renderChart() {
     const width = canvas.width;
     const height = canvas.height;
 
-    // Clear canvas
     ctx.clearRect(0, 0, width, height);
 
-    if (gameState.landHistory.length === 0) {
+    if (gameState.player.landHistory.length === 0) {
         ctx.fillStyle = '#999';
         ctx.font = '14px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('Play turns to see your land use graph', width / 2, height / 2);
+        ctx.fillText('Play turns to see land use graph', width / 2, height / 2);
         return;
     }
 
@@ -227,45 +426,63 @@ function renderChart() {
     }
 
     // Calculate scale
-    const maxLand = Math.max(...gameState.landHistory, 10);
-    const dataPoints = gameState.landHistory.length;
+    const maxLand = Math.max(
+        ...gameState.player.landHistory,
+        ...gameState.computer.landHistory,
+        10
+    );
+    const dataPoints = gameState.player.landHistory.length;
     const xStep = (width - 50) / Math.max(dataPoints - 1, 1);
     const yScale = (height - 60) / maxLand;
 
-    // Draw line
-    ctx.strokeStyle = '#667eea';
+    // Draw player line
+    ctx.strokeStyle = '#4CAF50';
     ctx.lineWidth = 3;
     ctx.beginPath();
-
-    gameState.landHistory.forEach((land, index) => {
+    gameState.player.landHistory.forEach((land, index) => {
         const x = 40 + index * xStep;
         const y = height - 20 - (land * yScale);
-
-        if (index === 0) {
-            ctx.moveTo(x, y);
-        } else {
-            ctx.lineTo(x, y);
-        }
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
     });
+    ctx.stroke();
 
+    // Draw computer line
+    ctx.strokeStyle = '#f44336';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    gameState.computer.landHistory.forEach((land, index) => {
+        const x = 40 + index * xStep;
+        const y = height - 20 - (land * yScale);
+        if (index === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    });
     ctx.stroke();
 
     // Draw points
-    ctx.fillStyle = '#764ba2';
-    gameState.landHistory.forEach((land, index) => {
+    ctx.fillStyle = '#4CAF50';
+    gameState.player.landHistory.forEach((land, index) => {
         const x = 40 + index * xStep;
         const y = height - 20 - (land * yScale);
-
         ctx.beginPath();
         ctx.arc(x, y, 4, 0, Math.PI * 2);
         ctx.fill();
     });
 
-    // Draw axes labels
+    ctx.fillStyle = '#f44336';
+    gameState.computer.landHistory.forEach((land, index) => {
+        const x = 40 + index * xStep;
+        const y = height - 20 - (land * yScale);
+        ctx.beginPath();
+        ctx.arc(x, y, 4, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // Labels
     ctx.fillStyle = '#333';
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Turn Number', width / 2, height - 2);
+    ctx.fillText('Turn', width / 2, height - 2);
 
     ctx.save();
     ctx.translate(12, height / 2);
@@ -273,7 +490,20 @@ function renderChart() {
     ctx.fillText('Land Plots', 0, 0);
     ctx.restore();
 
-    // Draw scale labels
+    // Legend
+    ctx.fillStyle = '#4CAF50';
+    ctx.fillRect(width - 100, 30, 15, 15);
+    ctx.fillStyle = '#333';
+    ctx.font = '11px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('You', width - 80, 42);
+
+    ctx.fillStyle = '#f44336';
+    ctx.fillRect(width - 100, 50, 15, 15);
+    ctx.fillStyle = '#333';
+    ctx.fillText('Computer', width - 80, 62);
+
+    // Scale labels
     ctx.textAlign = 'right';
     ctx.fillText('0', 35, height - 15);
     ctx.fillText(maxLand.toString(), 35, 25);
@@ -281,7 +511,6 @@ function renderChart() {
 
 // Show Feedback
 function showFeedback(message) {
-    // Create feedback element
     const feedback = document.createElement('div');
     feedback.style.cssText = `
         position: fixed;

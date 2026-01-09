@@ -3,40 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Farm Empire: The Jevons Paradox</title>
+    <title>Farm Empire: The Jevons Paradox - Competitive Edition</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1>🌾 Farm Empire: The Jevons Paradox 🌾</h1>
-            <p class="subtitle">Discover why efficiency can lead to MORE resource use, not less!</p>
+            <p class="subtitle">Compete against the computer! Convert forests and maximize profits!</p>
         </header>
 
         <div class="game-layout">
-            <!-- Left Panel: Game Info -->
+            <!-- Left Panel: Player Stats -->
             <div class="left-panel">
-                <div class="stats-panel">
-                    <h2>Your Farm Stats</h2>
+                <div class="stats-panel player-panel">
+                    <h2>👤 Your Farm</h2>
                     <div class="stat-item">
                         <span class="stat-label">💰 Money:</span>
-                        <span class="stat-value" id="money">$100</span>
+                        <span class="stat-value" id="playerMoney">$100</span>
+                    </div>
+                    <div class="stat-item highlight">
+                        <span class="stat-label">🏆 Total Profit:</span>
+                        <span class="stat-value" id="playerProfit">$0</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">🌽 Total Production:</span>
-                        <span class="stat-value" id="totalProduction">0 crops/turn</span>
+                        <span class="stat-label">🏞️ Land Plots:</span>
+                        <span class="stat-value" id="playerLand">3 plots</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">📊 Productivity Level:</span>
-                        <span class="stat-value" id="productivityLevel">1x</span>
+                        <span class="stat-label">📊 Productivity:</span>
+                        <span class="stat-value" id="playerProductivity">1x</span>
+                    </div>
+                </div>
+
+                <div class="stats-panel computer-panel">
+                    <h2>🤖 Computer Farm</h2>
+                    <div class="stat-item">
+                        <span class="stat-label">💰 Money:</span>
+                        <span class="stat-value" id="computerMoney">$100</span>
+                    </div>
+                    <div class="stat-item highlight">
+                        <span class="stat-label">🏆 Total Profit:</span>
+                        <span class="stat-value" id="computerProfit">$0</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">🏞️ Land Plots Owned:</span>
-                        <span class="stat-value" id="landCount">3 plots</span>
+                        <span class="stat-label">🏞️ Land Plots:</span>
+                        <span class="stat-value" id="computerLand">3 plots</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">⏱️ Turn:</span>
-                        <span class="stat-value" id="turn">1</span>
+                        <span class="stat-label">📊 Productivity:</span>
+                        <span class="stat-value" id="computerProductivity">1x</span>
                     </div>
                 </div>
 
@@ -45,33 +61,50 @@
                     <button id="nextTurnBtn" class="action-btn primary">
                         ⏭️ Next Turn (Harvest & Sell)
                     </button>
-                    <button id="buyLandBtn" class="action-btn">
-                        🏞️ Buy Land Plot ($<span id="landCost">50</span>)
-                    </button>
                     <button id="upgradeProductivityBtn" class="action-btn">
                         🔬 Upgrade Technology ($<span id="techCost">100</span>)
                     </button>
+                    <div class="info-box">
+                        <p><strong>🌲 Click forest plots to convert them to farmland for $<span id="forestCost">60</span>!</strong></p>
+                    </div>
                 </div>
 
-                <div class="chart-panel">
-                    <h2>Land Use Over Time</h2>
-                    <canvas id="landChart" width="280" height="180"></canvas>
+                <div class="game-info-panel">
+                    <h2>Game Info</h2>
+                    <div class="stat-item">
+                        <span class="stat-label">⏱️ Turn:</span>
+                        <span class="stat-value" id="turn">1 / 20</span>
+                    </div>
+                    <p class="goal-text">Goal: Make the highest total profit by turn 20!</p>
                 </div>
             </div>
 
             <!-- Center: Farm Grid -->
             <div class="center-panel">
-                <h2>Your Farmland</h2>
+                <h2>The Farmland Grid</h2>
                 <div id="farmGrid" class="farm-grid"></div>
                 <div class="legend">
                     <div class="legend-item">
-                        <span class="legend-color active"></span>
-                        <span>Active Farm Plot</span>
+                        <span class="legend-icon">🌾</span>
+                        <span>Your Farm</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon">🌽</span>
+                        <span>Computer Farm</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-icon">🌲</span>
+                        <span>Forest (Click to buy!)</span>
                     </div>
                     <div class="legend-item">
                         <span class="legend-color empty"></span>
-                        <span>Available Land</span>
+                        <span>Empty Land</span>
                     </div>
+                </div>
+
+                <div class="chart-panel">
+                    <h2>Land Use Over Time</h2>
+                    <canvas id="landChart" width="500" height="200"></canvas>
                 </div>
             </div>
 
@@ -81,18 +114,18 @@
                     <h2>🎓 The Jevons Paradox</h2>
                     <div class="education-content">
                         <p><strong>What is it?</strong></p>
-                        <p>The Jevons Paradox states that as technology makes resource use more efficient, total consumption of that resource may actually INCREASE instead of decrease.</p>
+                        <p>As technology makes resource use more efficient, total consumption may INCREASE instead of decrease.</p>
 
-                        <p><strong>In Agriculture:</strong></p>
+                        <p><strong>In This Game:</strong></p>
                         <ul>
-                            <li>Better farming techniques = more crops per acre</li>
-                            <li>Higher productivity = more profit per acre</li>
-                            <li>More profit = incentive to farm MORE land</li>
-                            <li>Result: Total land use INCREASES!</li>
+                            <li>🔬 Upgrade tech → more crops per plot</li>
+                            <li>💰 Higher productivity → more profit</li>
+                            <li>🌲 More profit → incentive to clear forests</li>
+                            <li>📈 Result: Land use INCREASES!</li>
                         </ul>
 
-                        <p><strong>Your Goal:</strong></p>
-                        <p>Watch what happens as you upgrade your farming technology. Even though you COULD produce the same amount on less land, will you?</p>
+                        <p><strong>Your Challenge:</strong></p>
+                        <p>Compete for 20 turns. You and the computer both want to maximize profits. Watch how efficiency drives expansion!</p>
                     </div>
                 </div>
 
@@ -104,7 +137,7 @@
                 <div class="insights-panel">
                     <h3>💡 Observations</h3>
                     <div id="insights" class="insights-content">
-                        <p>Start playing to see insights about your farming decisions...</p>
+                        <p>Start playing to see insights about the competition...</p>
                     </div>
                 </div>
             </div>

@@ -13,7 +13,7 @@ body {
 }
 
 .container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
 }
 
@@ -40,7 +40,7 @@ header h1 {
 
 .game-layout {
     display: grid;
-    grid-template-columns: 300px 1fr 350px;
+    grid-template-columns: 320px 1fr 350px;
     gap: 20px;
     align-items: start;
 }
@@ -49,20 +49,28 @@ header h1 {
 .left-panel {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 15px;
 }
 
-.stats-panel, .actions-panel, .chart-panel {
+.stats-panel, .actions-panel, .chart-panel, .game-info-panel {
     background: white;
     border-radius: 15px;
     padding: 20px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
-.stats-panel h2, .actions-panel h2, .chart-panel h2 {
+.player-panel {
+    border-left: 5px solid #4CAF50;
+}
+
+.computer-panel {
+    border-left: 5px solid #f44336;
+}
+
+.stats-panel h2, .actions-panel h2, .chart-panel h2, .game-info-panel h2 {
     margin-bottom: 15px;
     color: #667eea;
-    font-size: 1.3em;
+    font-size: 1.2em;
 }
 
 .stat-item {
@@ -72,6 +80,12 @@ header h1 {
     margin: 5px 0;
     background: #f8f9fa;
     border-radius: 8px;
+}
+
+.stat-item.highlight {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffe8a1 100%);
+    font-weight: bold;
+    border: 2px solid #ffc107;
 }
 
 .stat-label {
@@ -117,6 +131,30 @@ header h1 {
     box-shadow: 0 6px 20px rgba(56, 239, 125, 0.4);
 }
 
+.info-box {
+    background: #e3f2fd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 10px;
+    border-left: 4px solid #2196F3;
+}
+
+.info-box p {
+    margin: 0;
+    color: #1976D2;
+    font-size: 0.9em;
+}
+
+.goal-text {
+    margin-top: 10px;
+    padding: 10px;
+    background: #f3e5f5;
+    border-radius: 8px;
+    color: #7b1fa2;
+    font-weight: 600;
+    text-align: center;
+}
+
 /* Center Panel */
 .center-panel {
     background: white;
@@ -135,9 +173,9 @@ header h1 {
 .farm-grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 20px;
-    padding: 20px;
+    padding: 15px;
     background: #f0f4f8;
     border-radius: 10px;
 }
@@ -148,7 +186,7 @@ header h1 {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5em;
+    font-size: 2em;
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
@@ -159,15 +197,28 @@ header h1 {
     border: 2px dashed #cbd5e0;
 }
 
-.farm-plot.active {
+.farm-plot.forest {
+    background: linear-gradient(135deg, #1b5e20 0%, #2e7d32 100%);
+    border: 2px solid #388e3c;
+    cursor: pointer;
+}
+
+.farm-plot.forest:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 15px rgba(27, 94, 32, 0.5);
+    border-color: #ffd700;
+}
+
+.farm-plot.player-farm {
     background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-    border: 2px solid #38a169;
+    border: 3px solid #4CAF50;
     animation: grow 2s ease-in-out infinite;
 }
 
-.farm-plot.active::before {
-    content: '🌾';
-    animation: sway 3s ease-in-out infinite;
+.farm-plot.computer-farm {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    border: 3px solid #f44336;
+    animation: grow 2s ease-in-out infinite;
 }
 
 @keyframes grow {
@@ -175,49 +226,48 @@ header h1 {
     50% { transform: scale(1.05); }
 }
 
-@keyframes sway {
-    0%, 100% { transform: rotate(-5deg); }
-    50% { transform: rotate(5deg); }
-}
-
 .productivity-indicator {
     position: absolute;
     top: 2px;
     right: 2px;
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 50%;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.6em;
+    font-size: 0.4em;
     font-weight: bold;
-    color: #667eea;
+    color: white;
+    border: 2px solid white;
 }
 
 .legend {
     display: flex;
-    gap: 20px;
+    gap: 15px;
     justify-content: center;
-    padding: 10px;
+    padding: 15px;
+    flex-wrap: wrap;
 }
 
 .legend-item {
     display: flex;
     align-items: center;
     gap: 8px;
+    background: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 8px;
+}
+
+.legend-icon {
+    font-size: 1.5em;
 }
 
 .legend-color {
     width: 30px;
     height: 30px;
     border-radius: 5px;
-}
-
-.legend-color.active {
-    background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
-    border: 2px solid #38a169;
 }
 
 .legend-color.empty {
@@ -292,19 +342,30 @@ header h1 {
     margin-bottom: 10px;
 }
 
+.chart-panel {
+    margin-top: 20px;
+}
+
 .chart-panel canvas {
     width: 100%;
     height: auto;
+    border-radius: 8px;
 }
 
 /* Responsive Design */
+@media (max-width: 1400px) {
+    .game-layout {
+        grid-template-columns: 300px 1fr 330px;
+    }
+}
+
 @media (max-width: 1200px) {
     .game-layout {
         grid-template-columns: 1fr;
     }
 
-    .farm-grid {
-        grid-template-columns: repeat(6, 1fr);
+    .center-panel {
+        order: -1;
     }
 }
 
@@ -318,6 +379,20 @@ header h1 {
     }
 
     .farm-grid {
+        grid-template-columns: repeat(6, 1fr);
+    }
+
+    .farm-plot {
+        font-size: 1.5em;
+    }
+}
+
+@media (max-width: 480px) {
+    .farm-grid {
         grid-template-columns: repeat(4, 1fr);
+    }
+
+    .farm-plot {
+        font-size: 1.2em;
     }
 }
