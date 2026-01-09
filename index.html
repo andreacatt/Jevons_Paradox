@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Farm Empire: The Jevons Paradox - Competitive Edition</title>
+    <title>Farming on the frontier: The Jevons Paradox</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>🌾 Farm Empire: The Jevons Paradox 🌾</h1>
-            <p class="subtitle">Compete against the computer! Convert forests and maximize profits!</p>
+            <h1>🌾 Farming on the frontier: The Jevons Paradox 🌾</h1>
+            <p class="subtitle">Compete against the computer! Expand your farm and maximize profits!</p>
         </header>
 
         <div class="game-layout">
@@ -65,7 +65,9 @@
                         🔬 Upgrade Technology ($<span id="techCost">100</span>)
                     </button>
                     <div class="info-box">
-                        <p><strong>🌲 Click forest plots to convert them to farmland for $<span id="forestCost">60</span>!</strong></p>
+                        <p><strong>Click plots to expand:</strong></p>
+                        <p>🏜️ Empty land: $<span id="emptyLandCost">30</span></p>
+                        <p>🌲 Forest (conversion): $<span id="forestCost">60</span></p>
                     </div>
                 </div>
 
@@ -93,12 +95,12 @@
                         <span>Computer Farm</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-icon">🌲</span>
-                        <span>Forest (Click to buy!)</span>
+                        <span class="legend-color empty"></span>
+                        <span>Empty Land ($30)</span>
                     </div>
                     <div class="legend-item">
-                        <span class="legend-color empty"></span>
-                        <span>Empty Land</span>
+                        <span class="legend-icon">🌲</span>
+                        <span>Forest ($60)</span>
                     </div>
                 </div>
 

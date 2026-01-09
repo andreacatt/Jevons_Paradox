@@ -1,7 +1,6 @@
-# 🌾 Farm Empire: The Jevons Paradox 🌾
-## Competitive Edition
+# 🌾 Farming on the frontier: The Jevons Paradox 🌾
 
-An interactive educational game that teaches the Jevons Paradox through agricultural economics. Compete against a computer opponent to see who can maximize profits while witnessing the paradox in action!
+An interactive educational game that teaches the Jevons Paradox through agricultural economics. Compete against a smart AI opponent to see who can maximize profits while witnessing the paradox in action!
 
 ## 🎯 What is the Jevons Paradox?
 
@@ -35,18 +34,24 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 - Computer takes its turn automatically
 - Check who's winning in the profit race!
 
+**🏜️ Buy Empty Land**
+- Click on any gray empty plot to purchase it
+- Costs $30 per plot (cheapest option!)
+- Best ROI for expanding your farm
+- Computer will aggressively buy empty land too
+
 **🌲 Convert Forest to Farmland**
 - Click on any green forest plot (🌲) to convert it
-- Costs $60 per forest plot
+- Costs $60 per forest plot (twice as expensive as empty land!)
 - Forests are strategically placed in the center of the grid
-- Computer competes for the same forests!
-- Once converted, the plot becomes productive farmland
+- Less profitable than buying empty land
+- But sometimes the only option when empty land runs out
 
 **🔬 Upgrade Technology**
 - Improves farming productivity by 0.5x per upgrade
 - Costs $100 (increases with each upgrade)
 - Makes each plot produce more crops
-- Computer also upgrades its technology
+- The smart computer calculates ROI before upgrading
 
 ### Experiencing the Paradox
 
@@ -60,11 +65,12 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
    - See how each plot becomes MORE productive
    - Computer upgrades too - stay competitive!
 
-3. **Phase 3 - Forest Clearing & The Paradox**
+3. **Phase 3 - Land Rush & The Paradox**
    - Even though you COULD produce more with fewer plots...
-   - It's more profitable to clear forests and expand!
-   - Watch as forests disappear and farmland expands
-   - Both you and the computer clear forests aggressively
+   - It's more profitable to buy empty land and expand!
+   - Watch as empty land and forests disappear
+   - Computer prioritizes cheap empty land over expensive forests
+   - When empty land runs out, forests start getting cleared
    - Total land use INCREASES despite improved efficiency
 
 4. **Phase 4 - Game End & Analysis**
@@ -84,14 +90,20 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 ### Computer Stats Panel (Red Border)
 - Shows the same stats for your AI opponent
 - Compare to see who's winning
-- Watch the computer's strategy unfold
+- **Smart AI Strategy**: The computer calculates ROI for every decision
+  - Prioritizes cheap empty land early game
+  - Upgrades tech when it's profitable
+  - Aggressively expands in mid-game
+  - Can make multiple purchases per turn
+  - Switches to forests when empty land runs out
 
 ### Farm Grid
 - **🌾 Green/Blue plots**: Your active farmland
 - **🌽 Pink/Yellow plots**: Computer's farmland
+- **Gray dashed plots**: Empty land - Click to buy for $30!
 - **🌲 Forest plots**: Click to convert for $60!
-- **Gray plots**: Empty land
-- Hover over plots to see details
+- Hover over any plot to see details
+- All unowned plots are clickable!
 
 ### Land Use Graph
 - Tracks both player (green line) and computer (red line)

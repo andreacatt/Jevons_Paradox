@@ -20,6 +20,7 @@ const gameState = {
     maxTurns: 20,
     cropsPerPlot: 10,
     cropPrice: 5,
+    emptyLandCost: 30,
     forestCost: 60,
     techCost: 100,
     gridSize: 8,
@@ -125,6 +126,26 @@ function calculateEarnings(owner) {
     return totalCrops * gameState.cropPrice;
 }
 
+// Buy Empty Land Plot
+function buyEmptyLand(plotId) {
+    if (gameState.gameOver) return;
+
+    const plot = gameState.plots[plotId];
+    if (plot.type !== 'empty' || plot.owner !== null) return;
+    if (gameState.player.money < gameState.emptyLandCost) return;
+
+    gameState.player.money -= gameState.emptyLandCost;
+    plot.type = 'farmland';
+    plot.owner = 'player';
+    gameState.player.landPlots.push(plotId);
+
+    renderFarmGrid();
+    updateDisplay();
+    updateInsights();
+
+    showFeedback('Purchased empty land!');
+}
+
 // Buy Forest Plot
 function buyForestPlot(plotId) {
     if (gameState.gameOver) return;
@@ -164,26 +185,109 @@ function upgradeProductivity(owner) {
     }
 }
 
-// Computer AI Turn
+// Computer AI Turn - Smart Strategy
 function computerTurn() {
     const computer = gameState.computer;
+    const turnsLeft = gameState.maxTurns - gameState.turn;
 
-    // AI Strategy: Upgrade tech first, then expand land
-    if (computer.money >= gameState.techCost && computer.productivityLevel < 2.5) {
-        upgradeProductivity('computer');
-    } else if (computer.money >= gameState.forestCost) {
-        // Try to buy a forest plot
-        const availableForests = gameState.plots.filter(p =>
-            p.type === 'forest' && p.owner === null
-        );
+    // Calculate current production per turn
+    const currentEarnings = calculateEarnings('computer');
 
-        if (availableForests.length > 0) {
-            // Prefer plots closer to existing computer plots
-            const randomForest = availableForests[Math.floor(Math.random() * availableForests.length)];
-            randomForest.type = 'farmland';
-            randomForest.owner = 'computer';
-            computer.landPlots.push(randomForest.id);
+    // Available land
+    const availableEmpty = gameState.plots.filter(p => p.type === 'empty' && p.owner === null);
+    const availableForests = gameState.plots.filter(p => p.type === 'forest' && p.owner === null);
+
+    // Smart decision making based on ROI and turns left
+    let actionTaken = false;
+
+    // Strategy 1: Early game - aggressive land expansion (prioritize cheap empty land)
+    if (turnsLeft > 15 && computer.money >= gameState.emptyLandCost && availableEmpty.length > 0) {
+        // Buy empty land - best ROI
+        const plot = availableEmpty[Math.floor(Math.random() * availableEmpty.length)];
+        plot.type = 'farmland';
+        plot.owner = 'computer';
+        computer.landPlots.push(plot.id);
+        computer.money -= gameState.emptyLandCost;
+        actionTaken = true;
+    }
+
+    // Strategy 2: Upgrade tech when we have enough land and money
+    if (!actionTaken && computer.money >= gameState.techCost && computer.landPlots.length >= 4 &&
+        computer.productivityLevel < 3) {
+        // Calculate if tech upgrade pays off in remaining turns
+        const upgradeValue = computer.landPlots.length * gameState.cropsPerPlot * 0.5 * gameState.cropPrice * turnsLeft;
+        if (upgradeValue > gameState.techCost * 1.2) { // Need 20% profit margin
+            upgradeProductivity('computer');
+            actionTaken = true;
+        }
+    }
+
+    // Strategy 3: Mid-game - balance between empty land and forests
+    if (!actionTaken && turnsLeft > 8) {
+        if (computer.money >= gameState.emptyLandCost && availableEmpty.length > 0) {
+            // Still prioritize cheap empty land
+            const plot = availableEmpty[Math.floor(Math.random() * availableEmpty.length)];
+            plot.type = 'farmland';
+            plot.owner = 'computer';
+            computer.landPlots.push(plot.id);
+            computer.money -= gameState.emptyLandCost;
+            actionTaken = true;
+        } else if (computer.money >= gameState.forestCost && availableForests.length > 0 && turnsLeft > 5) {
+            // Buy forest only if no empty land available and enough turns to recoup cost
+            const forestROI = gameState.cropsPerPlot * computer.productivityLevel * gameState.cropPrice * turnsLeft;
+            if (forestROI > gameState.forestCost * 1.3) { // Need 30% profit margin for forests
+                const plot = availableForests[Math.floor(Math.random() * availableForests.length)];
+                plot.type = 'farmland';
+                plot.owner = 'computer';
+                computer.landPlots.push(plot.id);
+                computer.money -= gameState.forestCost;
+                actionTaken = true;
+            }
+        }
+    }
+
+    // Strategy 4: Late game - aggressive spending on anything profitable
+    if (!actionTaken && turnsLeft <= 8 && turnsLeft > 3) {
+        // Calculate ROI for each option
+        const emptyLandROI = turnsLeft * gameState.cropsPerPlot * computer.productivityLevel * gameState.cropPrice;
+        const forestROI = turnsLeft * gameState.cropsPerPlot * computer.productivityLevel * gameState.cropPrice;
+
+        if (computer.money >= gameState.emptyLandCost && availableEmpty.length > 0 &&
+            emptyLandROI > gameState.emptyLandCost) {
+            const plot = availableEmpty[Math.floor(Math.random() * availableEmpty.length)];
+            plot.type = 'farmland';
+            plot.owner = 'computer';
+            computer.landPlots.push(plot.id);
+            computer.money -= gameState.emptyLandCost;
+            actionTaken = true;
+        } else if (computer.money >= gameState.forestCost && availableForests.length > 0 &&
+                   forestROI > gameState.forestCost) {
+            const plot = availableForests[Math.floor(Math.random() * availableForests.length)];
+            plot.type = 'farmland';
+            plot.owner = 'computer';
+            computer.landPlots.push(plot.id);
             computer.money -= gameState.forestCost;
+            actionTaken = true;
+        }
+    }
+
+    // Strategy 5: Very late game - buy tech if we haven't maxed out
+    if (!actionTaken && turnsLeft <= 3 && computer.money >= gameState.techCost &&
+        computer.productivityLevel < 3 && computer.landPlots.length > 5) {
+        upgradeProductivity('computer');
+        actionTaken = true;
+    }
+
+    // Strategy 6: Multiple purchases in one turn if we have money
+    if (actionTaken && computer.money >= gameState.emptyLandCost * 2 && availableEmpty.length > 1 && turnsLeft > 10) {
+        // Buy another empty plot if we can afford it
+        const availableEmptyNow = gameState.plots.filter(p => p.type === 'empty' && p.owner === null);
+        if (availableEmptyNow.length > 0) {
+            const plot = availableEmptyNow[Math.floor(Math.random() * availableEmptyNow.length)];
+            plot.type = 'farmland';
+            plot.owner = 'computer';
+            computer.landPlots.push(plot.id);
+            computer.money -= gameState.emptyLandCost;
         }
     }
 }
@@ -339,6 +443,7 @@ function updateDisplay() {
 
     // Game stats
     document.getElementById('turn').textContent = `${gameState.turn} / ${gameState.maxTurns}`;
+    document.getElementById('emptyLandCost').textContent = gameState.emptyLandCost;
     document.getElementById('forestCost').textContent = gameState.forestCost;
     document.getElementById('techCost').textContent = gameState.techCost;
 
@@ -390,7 +495,9 @@ function renderFarmGrid() {
             }
         } else {
             plotDiv.classList.add('empty');
-            plotDiv.title = 'Empty land';
+            plotDiv.title = `Empty land - Click to purchase for $${gameState.emptyLandCost}`;
+            plotDiv.onclick = () => buyEmptyLand(plot.id);
+            plotDiv.style.cursor = 'pointer';
         }
 
         grid.appendChild(plotDiv);
