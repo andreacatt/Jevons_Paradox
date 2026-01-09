@@ -3,38 +3,58 @@ const gameState = {
     player: {
         money: 100,
         landPlots: [],
-        productivityLevel: 1,
         totalProfit: 0,
         landHistory: [],
-        hasUpgraded: false,
         plotsOwnedAtTurnStart: [],
-        purchasesThisTurn: 0
+        purchasesThisTurn: 0,
+        hasUpgradedThisTurn: false,
+        upgradesThisTurn: 0
     },
     computer: {
         money: 100,
         landPlots: [],
-        productivityLevel: 1,
         totalProfit: 0,
         landHistory: [],
-        hasUpgraded: false,
         plotsOwnedAtTurnStart: [],
-        purchasesThisTurn: 0
+        purchasesThisTurn: 0,
+        hasUpgradedThisTurn: false,
+        upgradesThisTurn: 0
     },
     turn: 1,
     maxTurns: 20,
     cropsPerPlot: 10,
-    cropPrice: 5,
+    baseCropPrice: 10,
     emptyLandCost: 30,
     forestCost: 60,
-    techCost: 100,
+    upgradeCostPerPlot: 40,
+    maxUpgradesPerTurn: 3,
     maxPurchasesPerTurn: 3,
-    gridSize: 8,
+    gridSize: 6,
     plots: [],
-    gameOver: false
+    gameOver: false,
+    gameMode: null, // 'single' or 'two-player'
+    currentPlayer: 'player' // For two-player mode
 };
 
 // Initialize game
 function init() {
+    showModeSelection();
+}
+
+function showModeSelection() {
+    document.getElementById('modeSelection').style.display = 'flex';
+    document.getElementById('gameContent').style.display = 'none';
+
+    document.getElementById('singlePlayerBtn').onclick = () => startGame('single');
+    document.getElementById('twoPlayerBtn').onclick = () => startGame('two-player');
+}
+
+function startGame(mode) {
+    gameState.gameMode = mode;
+
+    document.getElementById('modeSelection').style.display = 'none';
+    document.getElementById('gameContent').style.display = 'block';
+
     initializePlots();
     assignStartingPlots();
     updateDisplay();
@@ -43,7 +63,14 @@ function init() {
 
     // Event listeners
     document.getElementById('nextTurnBtn').addEventListener('click', nextTurn);
-    document.getElementById('upgradeProductivityBtn').addEventListener('click', () => upgradeProductivity('player'));
+    document.getElementById('upgradeBtn').addEventListener('click', () => enterUpgradeMode('player'));
+    document.getElementById('finishUpgradeBtn').addEventListener('click', () => finishUpgrading('player'));
+
+    // Update UI based on mode
+    const opponentName = mode === 'single' ? 'Computer' : 'Player 2';
+    document.querySelector('.computer-panel h2').textContent = `🤖 ${opponentName}`;
+
+    showFeedback(`Game started! ${mode === 'single' ? 'Beat the computer!' : 'Player 1 vs Player 2'}`);
 }
 
 // Initialize plots (forest, empty, etc.)
@@ -55,9 +82,9 @@ function initializePlots() {
         const row = Math.floor(i / gameState.gridSize);
         const col = i % gameState.gridSize;
 
-        // Create forest plots strategically
+        // Create forest plots strategically (center 2x2 area in 6x6 grid)
         let type = 'empty';
-        if ((row >= 2 && row <= 5) && (col >= 2 && col <= 5)) {
+        if ((row >= 2 && row <= 3) && (col >= 2 && col <= 3)) {
             type = 'forest';
         }
 
@@ -66,30 +93,42 @@ function initializePlots() {
             type: type,
             owner: null,
             row: row,
-            col: col
+            col: col,
+            upgraded: false
         });
     }
 }
 
 // Assign starting plots
 function assignStartingPlots() {
-    // Player gets bottom-left corner plots
-    [0, 1, 8].forEach(id => {
+    // Player gets bottom-left corner plots (for 6x6 grid)
+    [0, 1, 6].forEach(id => {
         gameState.plots[id].type = 'farmland';
         gameState.plots[id].owner = 'player';
         gameState.player.landPlots.push(id);
     });
 
-    // Computer gets top-right corner plots
-    [7, 15, 23].forEach(id => {
+    // Computer/Player2 gets top-right corner plots
+    const opponent = gameState.gameMode === 'two-player' ? 'computer' : 'computer';
+    [5, 11, 17].forEach(id => {
         gameState.plots[id].type = 'farmland';
-        gameState.plots[id].owner = 'computer';
-        gameState.computer.landPlots.push(id);
+        gameState.plots[id].owner = opponent;
+        gameState[opponent].landPlots.push(id);
     });
 
     // Initialize turn start plots
     gameState.player.plotsOwnedAtTurnStart = [...gameState.player.landPlots];
     gameState.computer.plotsOwnedAtTurnStart = [...gameState.computer.landPlots];
+}
+
+// Calculate crop price based on total agricultural plots (downward sloping demand)
+function calculateCropPrice() {
+    const totalAgriculturalPlots = gameState.plots.filter(p => p.type === 'farmland').length;
+    // Price decreases as supply increases: Price = baseCropPrice - (0.15 * totalPlots)
+    // At 6 plots (start): $10 - 0.9 = $9.1
+    // At 36 plots (full): $10 - 5.4 = $4.6
+    const price = Math.max(gameState.baseCropPrice - (0.15 * totalAgriculturalPlots), 2);
+    return Math.round(price * 100) / 100; // Round to 2 decimals
 }
 
 // Check if a plot is adjacent to any plot owned at turn start
@@ -124,7 +163,7 @@ function nextTurn() {
     gameState.player.money += playerEarnings;
     gameState.player.totalProfit += playerEarnings;
 
-    // Computer harvest
+    // Computer/Player2 harvest
     const computerEarnings = calculateEarnings('computer');
     gameState.computer.money += computerEarnings;
     gameState.computer.totalProfit += computerEarnings;
@@ -138,14 +177,21 @@ function nextTurn() {
     gameState.computer.plotsOwnedAtTurnStart = [...gameState.computer.landPlots];
     gameState.player.purchasesThisTurn = 0;
     gameState.computer.purchasesThisTurn = 0;
+    gameState.player.hasUpgradedThisTurn = false;
+    gameState.player.upgradesThisTurn = 0;
+    gameState.computer.hasUpgradedThisTurn = false;
+    gameState.computer.upgradesThisTurn = 0;
 
-    // Computer AI turn
-    computerTurn();
+    // Computer AI turn (if single-player mode)
+    if (gameState.gameMode === 'single') {
+        computerTurn();
+    }
 
     gameState.turn++;
 
-    // Check for game end
-    if (gameState.turn > gameState.maxTurns) {
+    // Check for game end conditions
+    const totalCultivatedPlots = gameState.plots.filter(p => p.type === 'farmland').length;
+    if (gameState.turn > gameState.maxTurns || totalCultivatedPlots >= 36) {
         endGame();
     }
 
@@ -154,14 +200,24 @@ function nextTurn() {
     updateInsights();
     checkParadox();
 
-    showFeedback(`Turn ${gameState.turn - 1}: You earned $${playerEarnings}!`);
+    const cropPrice = calculateCropPrice();
+    showFeedback(`Turn ${gameState.turn - 1}: You earned $${playerEarnings.toFixed(2)}! (Price: $${cropPrice}/crop)`);
 }
 
 // Calculate earnings for a player
 function calculateEarnings(owner) {
     const data = gameState[owner];
-    const totalCrops = data.landPlots.length * gameState.cropsPerPlot * data.productivityLevel;
-    return totalCrops * gameState.cropPrice;
+    const cropPrice = calculateCropPrice();
+
+    let totalCrops = 0;
+    // Calculate crops for each plot (upgraded plots produce 1.5x)
+    data.landPlots.forEach(plotId => {
+        const plot = gameState.plots[plotId];
+        const multiplier = plot.upgraded ? 1.5 : 1;
+        totalCrops += gameState.cropsPerPlot * multiplier;
+    });
+
+    return totalCrops * cropPrice;
 }
 
 // Buy Empty Land Plot
@@ -232,29 +288,88 @@ function buyForestPlot(plotId) {
     showFeedback(`Converted forest to farmland! (${remaining} purchases left this turn)`);
 }
 
-// Upgrade Productivity
-function upgradeProductivity(owner) {
+// Upgrade Plots - click on plots to upgrade them
+let upgradeMode = null; // null, 'player', or 'computer'
+
+function enterUpgradeMode(owner) {
     if (gameState.gameOver) return;
-
     const data = gameState[owner];
-    if (data.money < gameState.techCost) return;
 
-    data.money -= gameState.techCost;
-    data.productivityLevel += 0.5;
-    data.hasUpgraded = true;
+    // Check if already upgraded this turn
+    if (data.hasUpgradedThisTurn) {
+        showFeedback('You can only upgrade once per turn!');
+        return;
+    }
 
+    // Get unupgraded plots owned by this player
+    const unupgradedPlots = data.landPlots.filter(id => !gameState.plots[id].upgraded);
+
+    if (unupgradedPlots.length === 0) {
+        showFeedback('All your plots are already upgraded!');
+        return;
+    }
+
+    upgradeMode = owner;
+    showFeedback('Click up to 3 of your plots to upgrade them ($40 each). Click "Done" when finished.');
+
+    // Highlight available plots for upgrade
+    renderFarmGrid();
     updateDisplay();
-    updateInsights();
+}
 
-    if (owner === 'player') {
-        showFeedback('Technology upgraded! Each plot now produces more!');
+function upgradePlot(plotId, owner) {
+    const data = gameState[owner];
+    const plot = gameState.plots[plotId];
+
+    // Validate
+    if (!data.landPlots.includes(plotId)) return;
+    if (plot.upgraded) {
+        showFeedback('This plot is already upgraded!');
+        return;
+    }
+    if (data.upgradesThisTurn >= gameState.maxUpgradesPerTurn) {
+        showFeedback('Maximum 3 upgrades per turn!');
+        return;
+    }
+    if (data.money < gameState.upgradeCostPerPlot) {
+        showFeedback('Not enough money! Need $' + gameState.upgradeCostPerPlot);
+        return;
+    }
+
+    // Perform upgrade
+    data.money -= gameState.upgradeCostPerPlot;
+    plot.upgraded = true;
+    data.upgradesThisTurn++;
+
+    const remaining = gameState.maxUpgradesPerTurn - data.upgradesThisTurn;
+    showFeedback(`Plot upgraded! (${remaining} upgrades left, $${gameState.upgradeCostPerPlot} each)`);
+
+    if (data.upgradesThisTurn >= gameState.maxUpgradesPerTurn) {
+        finishUpgrading(owner);
+    } else {
+        renderFarmGrid();
+        updateDisplay();
     }
 }
 
-// Computer AI Turn - Smart Strategy with Adjacency and Purchase Limits
+function finishUpgrading(owner) {
+    const data = gameState[owner];
+    data.hasUpgradedThisTurn = true;
+    upgradeMode = null;
+
+    if (data.upgradesThisTurn > 0) {
+        showFeedback(`Upgraded ${data.upgradesThisTurn} plot(s) for $${data.upgradesThisTurn * gameState.upgradeCostPerPlot} total!`);
+    }
+
+    renderFarmGrid();
+    updateDisplay();
+}
+
+// Computer AI Turn - Smart Strategy with New Mechanics
 function computerTurn() {
     const computer = gameState.computer;
     const turnsLeft = gameState.maxTurns - gameState.turn;
+    const cropPrice = calculateCropPrice();
 
     // Get available adjacent plots
     function getAdjacentAvailablePlots(type) {
@@ -273,7 +388,6 @@ function computerTurn() {
         const availablePlots = getAdjacentAvailablePlots(plotType);
         if (availablePlots.length === 0) return false;
 
-        // Pick a random adjacent plot
         const plot = availablePlots[Math.floor(Math.random() * availablePlots.length)];
         plot.type = 'farmland';
         plot.owner = 'computer';
@@ -283,45 +397,48 @@ function computerTurn() {
         return true;
     }
 
-    // Strategy 1: Early game - aggressive land expansion (prioritize cheap empty land)
-    if (turnsLeft > 15) {
+    // Computer upgrade strategy - upgrade plots if profitable
+    if (!computer.hasUpgradedThisTurn && computer.landPlots.length >= 3) {
+        const unupgradedPlots = computer.landPlots.filter(id => !gameState.plots[id].upgraded);
+        const numToUpgrade = Math.min(unupgradedPlots.length, gameState.maxUpgradesPerTurn);
+        const upgradeCost = numToUpgrade * gameState.upgradeCostPerPlot;
+
+        // Calculate ROI for upgrades
+        const additionalCrops = numToUpgrade * gameState.cropsPerPlot * 0.5; // 50% boost
+        const upgradeValue = additionalCrops * cropPrice * turnsLeft;
+
+        if (computer.money >= upgradeCost && upgradeValue > upgradeCost * 1.2 && turnsLeft > 5) {
+            // Upgrade plots
+            for (let i = 0; i < numToUpgrade; i++) {
+                const plotId = unupgradedPlots[i];
+                gameState.plots[plotId].upgraded = true;
+                computer.money -= gameState.upgradeCostPerPlot;
+                computer.upgradesThisTurn++;
+            }
+            computer.hasUpgradedThisTurn = true;
+        }
+    }
+
+    // Land expansion strategy - prioritize cheap empty land
+    if (turnsLeft > 12) {
         while (computer.purchasesThisTurn < gameState.maxPurchasesPerTurn) {
             if (!tryPurchase('empty', gameState.emptyLandCost)) break;
         }
     }
 
-    // Strategy 2: Upgrade tech when we have enough land and money
-    if (computer.money >= gameState.techCost && computer.landPlots.length >= 4 &&
-        computer.productivityLevel < 3) {
-        const upgradeValue = computer.landPlots.length * gameState.cropsPerPlot * 0.5 * gameState.cropPrice * turnsLeft;
-        if (upgradeValue > gameState.techCost * 1.2) {
-            upgradeProductivity('computer');
-        }
-    }
-
-    // Strategy 3: Mid-game - balance between empty land and forests
-    if (turnsLeft > 8 && turnsLeft <= 15) {
-        // Try to buy empty land first
+    // Mid-game - balance between empty land and forests
+    if (turnsLeft > 5 && turnsLeft <= 12) {
         while (computer.purchasesThisTurn < gameState.maxPurchasesPerTurn) {
             if (tryPurchase('empty', gameState.emptyLandCost)) continue;
-            // If no empty land, try forests if ROI is good
-            if (turnsLeft > 5) {
-                const forestROI = gameState.cropsPerPlot * computer.productivityLevel * gameState.cropPrice * turnsLeft;
-                if (forestROI > gameState.forestCost * 1.3) {
-                    if (!tryPurchase('forest', gameState.forestCost)) break;
-                } else {
-                    break;
-                }
-            } else {
-                break;
-            }
+            if (turnsLeft > 6 && tryPurchase('forest', gameState.forestCost)) continue;
+            break;
         }
     }
 
-    // Strategy 4: Late game - aggressive spending on anything profitable
-    if (turnsLeft <= 8 && turnsLeft > 3) {
-        const emptyLandROI = turnsLeft * gameState.cropsPerPlot * computer.productivityLevel * gameState.cropPrice;
-        const forestROI = turnsLeft * gameState.cropsPerPlot * computer.productivityLevel * gameState.cropPrice;
+    // Late game - buy whatever is profitable
+    if (turnsLeft <= 5) {
+        const emptyLandROI = turnsLeft * gameState.cropsPerPlot * cropPrice;
+        const forestROI = turnsLeft * gameState.cropsPerPlot * cropPrice;
 
         while (computer.purchasesThisTurn < gameState.maxPurchasesPerTurn) {
             if (emptyLandROI > gameState.emptyLandCost && tryPurchase('empty', gameState.emptyLandCost)) {
@@ -332,12 +449,6 @@ function computerTurn() {
                 break;
             }
         }
-    }
-
-    // Strategy 5: Very late game - buy tech if we haven't maxed out
-    if (turnsLeft <= 3 && computer.money >= gameState.techCost &&
-        computer.productivityLevel < 3 && computer.landPlots.length > 5) {
-        upgradeProductivity('computer');
     }
 }
 
@@ -479,29 +590,40 @@ function updateInsights() {
 // Update Display
 function updateDisplay() {
     // Player stats
-    document.getElementById('playerMoney').textContent = `$${gameState.player.money}`;
-    document.getElementById('playerProfit').textContent = `$${gameState.player.totalProfit}`;
+    const playerUpgradedPlots = gameState.player.landPlots.filter(id => gameState.plots[id].upgraded).length;
+    document.getElementById('playerMoney').textContent = `$${Math.round(gameState.player.money)}`;
+    document.getElementById('playerProfit').textContent = `$${Math.round(gameState.player.totalProfit)}`;
     document.getElementById('playerLand').textContent = `${gameState.player.landPlots.length} plots`;
-    document.getElementById('playerProductivity').textContent = `${gameState.player.productivityLevel}x`;
+    document.getElementById('playerProductivity').textContent = `${playerUpgradedPlots} upgraded`;
 
     // Computer stats
-    document.getElementById('computerMoney').textContent = `$${gameState.computer.money}`;
-    document.getElementById('computerProfit').textContent = `$${gameState.computer.totalProfit}`;
+    const computerUpgradedPlots = gameState.computer.landPlots.filter(id => gameState.plots[id].upgraded).length;
+    document.getElementById('computerMoney').textContent = `$${Math.round(gameState.computer.money)}`;
+    document.getElementById('computerProfit').textContent = `$${Math.round(gameState.computer.totalProfit)}`;
     document.getElementById('computerLand').textContent = `${gameState.computer.landPlots.length} plots`;
-    document.getElementById('computerProductivity').textContent = `${gameState.computer.productivityLevel}x`;
+    document.getElementById('computerProductivity').textContent = `${computerUpgradedPlots} upgraded`;
 
     // Game stats
     document.getElementById('turn').textContent = `${gameState.turn} / ${gameState.maxTurns}`;
     document.getElementById('emptyLandCost').textContent = gameState.emptyLandCost;
     document.getElementById('forestCost').textContent = gameState.forestCost;
-    document.getElementById('techCost').textContent = gameState.techCost;
+    document.getElementById('upgradeCost').textContent = gameState.upgradeCostPerPlot;
+
+    const cropPrice = calculateCropPrice();
+    document.getElementById('currentPrice').textContent = `$${cropPrice.toFixed(2)}`;
 
     const purchasesRemaining = gameState.maxPurchasesPerTurn - gameState.player.purchasesThisTurn;
     document.getElementById('purchasesLeft').textContent = purchasesRemaining;
 
+    const totalCultivated = gameState.plots.filter(p => p.type === 'farmland').length;
+    document.getElementById('cultivatedPlots').textContent = `${totalCultivated} / 36`;
+
     // Update button states
-    const upgradeBtn = document.getElementById('upgradeProductivityBtn');
-    upgradeBtn.disabled = gameState.player.money < gameState.techCost || gameState.gameOver;
+    const upgradeBtn = document.getElementById('upgradeBtn');
+    upgradeBtn.disabled = gameState.player.hasUpgradedThisTurn || gameState.gameOver;
+
+    const finishUpgradeBtn = document.getElementById('finishUpgradeBtn');
+    finishUpgradeBtn.style.display = upgradeMode === 'player' ? 'block' : 'none';
 
     const nextTurnBtn = document.getElementById('nextTurnBtn');
     nextTurnBtn.disabled = gameState.gameOver;
@@ -520,34 +642,40 @@ function renderFarmGrid() {
         if (plot.type === 'forest') {
             plotDiv.classList.add('forest');
             plotDiv.innerHTML = '🌲';
-            plotDiv.title = `Forest - Click to convert to farmland ($${gameState.forestCost})`;
+            plotDiv.title = `Forest - Click to convert ($${gameState.forestCost})`;
             plotDiv.onclick = () => buyForestPlot(plot.id);
             plotDiv.style.cursor = 'pointer';
         } else if (plot.type === 'farmland' && plot.owner === 'player') {
             plotDiv.classList.add('player-farm');
-            plotDiv.innerHTML = '🌾';
-            plotDiv.title = 'Your farm';
-            if (gameState.player.productivityLevel > 1) {
-                const indicator = document.createElement('div');
-                indicator.className = 'productivity-indicator';
-                indicator.textContent = `${gameState.player.productivityLevel}x`;
-                indicator.style.background = 'rgba(76, 175, 80, 0.9)';
-                plotDiv.appendChild(indicator);
+            if (plot.upgraded) {
+                plotDiv.classList.add('upgraded');
+                plotDiv.innerHTML = '🌾⭐';
+                plotDiv.title = 'Your upgraded farm (1.5x production)';
+            } else {
+                plotDiv.innerHTML = '🌾';
+                plotDiv.title = 'Your farm';
+
+                // In upgrade mode, allow clicking to upgrade
+                if (upgradeMode === 'player') {
+                    plotDiv.classList.add('upgradeable');
+                    plotDiv.style.cursor = 'pointer';
+                    plotDiv.onclick = () => upgradePlot(plot.id, 'player');
+                    plotDiv.title = 'Click to upgrade ($40)';
+                }
             }
         } else if (plot.type === 'farmland' && plot.owner === 'computer') {
             plotDiv.classList.add('computer-farm');
-            plotDiv.innerHTML = '🌽';
-            plotDiv.title = 'Computer farm';
-            if (gameState.computer.productivityLevel > 1) {
-                const indicator = document.createElement('div');
-                indicator.className = 'productivity-indicator';
-                indicator.textContent = `${gameState.computer.productivityLevel}x`;
-                indicator.style.background = 'rgba(244, 67, 54, 0.9)';
-                plotDiv.appendChild(indicator);
+            if (plot.upgraded) {
+                plotDiv.classList.add('upgraded');
+                plotDiv.innerHTML = '🌽⭐';
+                plotDiv.title = 'Opponent upgraded farm (1.5x production)';
+            } else {
+                plotDiv.innerHTML = '🌽';
+                plotDiv.title = 'Opponent farm';
             }
         } else {
             plotDiv.classList.add('empty');
-            plotDiv.title = `Empty land - Click to purchase for $${gameState.emptyLandCost}`;
+            plotDiv.title = `Empty land - Click to buy ($${gameState.emptyLandCost})`;
             plotDiv.onclick = () => buyEmptyLand(plot.id);
             plotDiv.style.cursor = 'pointer';
         }
