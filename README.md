@@ -32,26 +32,47 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 - Crops = Land Plots × 10 crops/plot × Productivity Level
 - Each crop sells for $5
 - Computer takes its turn automatically
+- Purchase counter resets to 3 for next turn
 - Check who's winning in the profit race!
 
 **🏜️ Buy Empty Land**
 - Click on any gray empty plot to purchase it
 - Costs $30 per plot (cheapest option!)
+- **MUST be adjacent** to land you owned at start of turn (up/down/left/right)
+- **Maximum 3 purchases per turn**
 - Best ROI for expanding your farm
 - Computer will aggressively buy empty land too
 
 **🌲 Convert Forest to Farmland**
 - Click on any green forest plot (🌲) to convert it
 - Costs $60 per forest plot (twice as expensive as empty land!)
+- **MUST be adjacent** to land you owned at start of turn (up/down/left/right)
+- **Counts toward 3 purchase limit**
 - Forests are strategically placed in the center of the grid
 - Less profitable than buying empty land
-- But sometimes the only option when empty land runs out
+- But sometimes the only option when adjacent empty land runs out
 
 **🔬 Upgrade Technology**
 - Improves farming productivity by 0.5x per upgrade
 - Costs $100 (increases with each upgrade)
 - Makes each plot produce more crops
+- Does NOT count toward purchase limit
 - The smart computer calculates ROI before upgrading
+
+### Important Expansion Rules
+
+**Adjacency Requirement:**
+- New plots must touch land you owned at the START of the current turn
+- Touching = directly up, down, left, or right (not diagonal)
+- You expand outward from your existing territory, like real frontier farming
+- You cannot "jump" across the map to grab isolated plots
+
+**Purchase Limit:**
+- Maximum 3 land purchases per turn (empty land + forests combined)
+- Resets every turn
+- Technology upgrades don't count toward this limit
+- Plan your expansion strategy carefully!
+- Computer follows the same rules
 
 ### Experiencing the Paradox
 
@@ -97,13 +118,18 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
   - Can make multiple purchases per turn
   - Switches to forests when empty land runs out
 
+### Game Info Panel
+- **Turn counter**: Shows current turn out of 20
+- **Purchases Left**: Shows remaining purchases this turn (max 3)
+- Displays adjacency requirement reminder
+
 ### Farm Grid
 - **🌾 Green/Blue plots**: Your active farmland
 - **🌽 Pink/Yellow plots**: Computer's farmland
-- **Gray dashed plots**: Empty land - Click to buy for $30!
-- **🌲 Forest plots**: Click to convert for $60!
+- **Gray dashed plots**: Empty land - Click if adjacent to buy for $30!
+- **🌲 Forest plots**: Click if adjacent to convert for $60!
 - Hover over any plot to see details
-- All unowned plots are clickable!
+- Only adjacent plots to your turn-start land are purchasable
 
 ### Land Use Graph
 - Tracks both player (green line) and computer (red line)
@@ -126,7 +152,9 @@ This game demonstrates:
 3. **Rebound Effects**: Why efficiency doesn't always reduce consumption
 4. **Deforestation Economics**: Why forests disappear even when we don't "need" more land
 5. **Historical Patterns**: Mirrors real agricultural expansion despite technological improvements
-6. **Critical Thinking**: Challenges intuition about efficiency and conservation
+6. **Frontier Expansion**: How territory grows outward from existing settlements
+7. **Resource Constraints**: Strategic planning under limited actions per turn
+8. **Critical Thinking**: Challenges intuition about efficiency and conservation
 
 ## 🌍 Real-World Examples
 
