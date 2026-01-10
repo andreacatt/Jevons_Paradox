@@ -475,6 +475,32 @@ header h1 {
     font-weight: normal;
 }
 
+.scenario-subtitle {
+    color: #666;
+    font-size: 1em;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+.scenario-btn {
+    width: 320px;
+    font-size: 1.05em;
+    padding: 25px;
+}
+
+/* Current Turn Indicator */
+.current-turn-indicator {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-weight: bold;
+    font-size: 1.2em;
+    padding: 12px 20px;
+    border-radius: 10px;
+    text-align: center;
+    margin: 15px 0;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
 /* Upgradeable Plot Highlighting */
 .farm-plot.upgradeable {
     border: 3px dashed #ffd700 !important;

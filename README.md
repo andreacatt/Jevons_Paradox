@@ -20,14 +20,18 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 1. Open `index.html` in any modern web browser
 2. **Choose your game mode:**
    - **Single Player**: Play against a smart AI opponent
-   - **Two Players**: Local multiplayer (share the same device)
-3. Both players start with:
+   - **Two Players**: Local multiplayer - players take turns sharing the same device
+3. **Choose your economic scenario:**
+   - **🚫 Autarky (No Trade)**: Limited local demand - prices fall linearly to $0 when all 36 plots are cultivated
+   - **🌍 International Trade**: Access to global markets - prices only fall by 20% at full production (from $10 to $8)
+4. Both players start with:
    - $100 in money
    - 3 farm plots on a 6x6 grid (36 total plots)
    - No upgraded plots initially
-4. You have **20 turns** to maximize your total profit
-5. **Game ends when:** Either 20 turns complete OR all 36 plots are cultivated
-6. The player with the highest total profit at the end wins!
+5. You have **20 turns** to maximize your total profit
+6. **In two-player mode**: Players alternate turns - Player 1 makes moves, then Player 2, then both harvest
+7. **Game ends when:** Either 20 turns complete OR all 36 plots are cultivated
+8. The player with the highest total profit at the end wins!
 
 ### Game Mechanics
 
@@ -35,12 +39,21 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 - Both players harvest crops from all their plots
 - Crops = Land Plots × 10 crops/plot × (1.5x if upgraded, 1x if not)
 - **Downward Sloping Demand Curve:** Crop price decreases as total agricultural supply increases!
-  - Formula: Price = $10 - ($0.15 × Total Cultivated Plots)
-  - At game start (6 plots): ~$9.10 per crop
-  - At mid-game (18 plots): ~$7.30 per crop
-  - At end-game (36 plots): ~$4.60 per crop
-- This demonstrates how expanding production drives down prices for everyone
+  - **Autarky Scenario:**
+    - Formula: Price = $10 - ($10/36 × Total Plots) = $10 - ($0.278 × Total Plots)
+    - At game start (6 plots): ~$8.33 per crop
+    - At mid-game (18 plots): ~$5.00 per crop
+    - At end-game (36 plots): **$0.00 per crop** (no demand left!)
+    - Demonstrates severe market saturation in closed economy
+  - **International Trade Scenario:**
+    - Formula: Price = $10 - ($2/36 × Total Plots) = $10 - ($0.056 × Total Plots)
+    - At game start (6 plots): ~$9.67 per crop
+    - At mid-game (18 plots): ~$9.00 per crop
+    - At end-game (36 plots): **$8.00 per crop** (only 20% decrease)
+    - Global markets provide price stability even at full production
+- This demonstrates how market size affects pricing power and expansion incentives
 - In single-player mode, computer takes its turn automatically
+- In two-player mode, click "Next Turn" to switch between players
 - Purchase counter resets to 3 for next turn
 - Upgrade availability resets (can upgrade again next turn)
 - Check who's winning in the profit race!
@@ -120,8 +133,46 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
    - Game ends at turn 20 OR when all 36 plots are cultivated
    - Check who has the highest total profit
    - Review the "Land Use Over Time" graph showing both players' expansion
-   - Notice how prices dropped from ~$9 to ~$5 as the grid filled up
+   - Notice how prices dropped significantly as the grid filled up
    - **The lesson:** Competition + efficiency improvements drove MAXIMUM resource consumption, not conservation!
+
+## 🌐 Economic Scenarios Explained
+
+The game offers two scenarios that demonstrate how market structure affects the Jevons Paradox:
+
+### 🚫 Autarky (No Trade) - Closed Economy
+- **Reality**: You're selling to a small local market with limited demand
+- **Price Impact**: SEVERE - prices collapse to $0 when all land is cultivated
+- **Strategic Implications**:
+  - Early expansion is highly profitable (~$8-9 per crop)
+  - Mid-game prices fall rapidly as market saturates
+  - Late game becomes unprofitable as prices approach $0
+  - **The Paradox is WEAKER** - expansion becomes self-limiting
+  - Players may strategically stop expanding when ROI turns negative
+- **Real-World Example**: Small island nation or isolated region with no exports
+- **Educational Lesson**: In autarky, market saturation can naturally limit the paradox
+
+### 🌍 International Trade - Open Economy
+- **Reality**: You're selling to global markets with vast demand
+- **Price Impact**: MILD - prices only drop 20% even at full production ($10 → $8)
+- **Strategic Implications**:
+  - Expansion remains profitable throughout the entire game
+  - Price stability encourages maximum land use
+  - **The Paradox is STRONGER** - no market mechanism stops expansion
+  - Rational players will cultivate ALL land regardless of efficiency
+  - Forest destruction continues because it's always profitable
+- **Real-World Example**: Agricultural exports to global commodity markets
+- **Educational Lesson**: Global trade enables the full Jevons Paradox - efficiency never reduces resource consumption
+
+### Comparing the Scenarios
+| Aspect | Autarky | International Trade |
+|--------|---------|---------------------|
+| Price at 6 plots | $8.33 | $9.67 |
+| Price at 36 plots | $0.00 | $8.00 |
+| Total price drop | 100% | 20% |
+| Jevons Paradox strength | Weak (self-limiting) | Strong (unlimited) |
+| Environmental impact | Moderate | Maximum |
+| Game difficulty | Strategic timing critical | Expand aggressively always |
 
 ## 📊 Understanding Your Dashboard
 
@@ -190,6 +241,10 @@ This game demonstrates:
 10. **Game Theory**: How two-player competition differs from single-player optimization
 11. **Critical Thinking**: Challenges intuition about efficiency and conservation
 12. **Price Elasticity**: How expanding production affects market prices and profitability
+13. **Autarky vs Trade**: How closed vs open economies respond differently to resource exploitation
+14. **Market Saturation**: How limited demand can (partially) constrain the Jevons Paradox in autarky
+15. **Globalization Effects**: How international trade enables unlimited expansion by maintaining price stability
+16. **Policy Implications**: Which economic scenarios require stronger environmental regulations
 
 ## 🌍 Real-World Examples
 
@@ -209,19 +264,30 @@ This game demonstrates:
 
 ## 💡 Discussion Questions for Students
 
+### General Paradox Questions
 1. Why don't farmers reduce their land use after improving productivity (upgrading plots)?
 2. How does competition between players accelerate deforestation in the game?
-3. Watch the crop price fall from ~$9 to ~$5 as you play. Why does expansion continue even with falling prices?
-4. In the game, is it better to upgrade existing plots or buy new land? How does this decision change as the game progresses?
-5. If you played cooperatively instead of competitively, would forests survive better? What if you agreed to limit expansion?
-6. Compare single-player mode vs two-player mode. Does human competition lead to faster deforestation than AI competition?
-7. What would need to change to prevent the paradox? (e.g., land use regulations, profit caps, environmental taxes)
-8. How does the Jevons Paradox relate to environmental sustainability and climate change?
-9. Can you think of modern technology examples where efficiency led to MORE consumption?
-10. Is the Jevons Paradox always a bad thing? When might increased consumption be beneficial?
-11. How does the game mirror real-world deforestation in the Amazon or Southeast Asia?
-12. What happens when all 36 plots are cultivated? How does this relate to real-world resource limits?
-13. Does the downward sloping demand curve make the game more realistic? How does it affect your strategy?
+3. In the game, is it better to upgrade existing plots or buy new land? How does this decision change as the game progresses?
+4. If you played cooperatively instead of competitively, would forests survive better? What if you agreed to limit expansion?
+5. Compare single-player mode vs two-player mode. Does human competition lead to faster deforestation than AI competition?
+6. What would need to change to prevent the paradox? (e.g., land use regulations, profit caps, environmental taxes)
+
+### Economic Scenario Questions
+7. **Play both autarky and trade scenarios.** In which scenario do prices fall more dramatically? Why?
+8. **Autarky scenario:** At what point does expansion become unprofitable? Do you stop expanding, or do you keep going anyway?
+9. **Trade scenario:** Does the price stability make you expand more aggressively? Why or why not?
+10. Which scenario leads to more total deforestation? Does this match what you expected?
+11. In the autarky scenario, does the severe price drop create a "natural limit" to expansion? Or do players still clear all the land?
+12. How does access to international markets change the environmental impact in the game? Does this mirror real-world trade patterns?
+13. If you were designing environmental policy, which scenario would require stricter regulations? Why?
+
+### Real-World Connections
+14. How does the Jevons Paradox relate to environmental sustainability and climate change?
+15. Can you think of modern technology examples where efficiency led to MORE consumption?
+16. Is the Jevons Paradox always a bad thing? When might increased consumption be beneficial?
+17. How does the game mirror real-world deforestation in the Amazon or Southeast Asia?
+18. What happens when all 36 plots are cultivated? How does this relate to real-world resource limits?
+19. Does globalization (the trade scenario) make environmental problems better or worse? Use the game as evidence.
 
 ## 🛠️ Technical Details
 
@@ -253,18 +319,28 @@ This game demonstrates:
 
 After playing this game, students should be able to:
 
+### Core Paradox Understanding
 1. ✅ Define the Jevons Paradox and explain it with examples
 2. ✅ Explain how efficiency improvements can increase resource consumption
 3. ✅ Understand economic incentives in resource use decisions
 4. ✅ Recognize how competition accelerates resource exploitation
-5. ✅ Understand downward sloping demand curves and market dynamics
-6. ✅ Analyze tradeoffs between upgrading existing resources vs expanding
-7. ✅ Connect the paradox to deforestation and environmental issues
-8. ✅ Apply the concept to real-world scenarios (agriculture, energy, technology)
-9. ✅ Think critically about technology and sustainability
-10. ✅ Understand why market forces alone may not protect resources
-11. ✅ Recognize how strategic constraints (adjacency, purchase limits) affect behavior
-12. ✅ Compare competitive vs cooperative resource management strategies
+5. ✅ Connect the paradox to deforestation and environmental issues
+6. ✅ Think critically about technology and sustainability
+
+### Economic and Market Concepts
+7. ✅ Understand downward sloping demand curves and market dynamics
+8. ✅ Explain the difference between autarky (closed economy) and international trade (open economy)
+9. ✅ Analyze how market size affects price stability and resource exploitation
+10. ✅ Compare the strength of the Jevons Paradox in different market structures
+11. ✅ Understand why global markets can exacerbate environmental problems
+12. ✅ Recognize that market saturation can (sometimes) limit resource consumption in closed economies
+
+### Strategic Decision-Making
+13. ✅ Analyze tradeoffs between upgrading existing resources vs expanding
+14. ✅ Understand why market forces alone may not protect resources
+15. ✅ Recognize how strategic constraints (adjacency, purchase limits) affect behavior
+16. ✅ Compare competitive vs cooperative resource management strategies
+17. ✅ Apply the concept to real-world scenarios (agriculture, energy, technology, globalization)
 
 ## 🤝 Contributing
 

@@ -26,6 +26,22 @@
             </div>
         </div>
 
+        <!-- Economic Scenario Selection Screen -->
+        <div id="scenarioSelection" class="mode-selection" style="display:none;">
+            <div class="mode-panel">
+                <h2>Choose Economic Scenario</h2>
+                <p class="scenario-subtitle">How will prices respond to increased production?</p>
+                <button id="autarkyBtn" class="mode-btn scenario-btn">
+                    🚫 Autarky (No Trade)<br>
+                    <span class="mode-desc">Limited demand - prices fall to $0 at full production</span>
+                </button>
+                <button id="tradeBtn" class="mode-btn scenario-btn">
+                    🌍 International Trade<br>
+                    <span class="mode-desc">Global markets - prices only fall 20% at full production</span>
+                </button>
+            </div>
+        </div>
+
         <!-- Game Content (hidden initially) -->
         <div id="gameContent" style="display:none;">
             <div class="game-layout">
@@ -95,6 +111,9 @@
                         <div class="stat-item">
                             <span class="stat-label">⏱️ Turn:</span>
                             <span class="stat-value" id="turn">1 / 20</span>
+                        </div>
+                        <div id="currentTurnIndicator" class="current-turn-indicator" style="display:none;">
+                            Player 1's Turn
                         </div>
                         <div class="stat-item highlight">
                             <span class="stat-label">🛒 Purchases Left:</span>

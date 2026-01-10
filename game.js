@@ -33,7 +33,8 @@ const gameState = {
     plots: [],
     gameOver: false,
     gameMode: null, // 'single' or 'two-player'
-    currentPlayer: 'player' // For two-player mode
+    currentPlayer: 'player', // For two-player mode
+    economicScenario: null // 'autarky' or 'trade'
 };
 
 // Initialize game
@@ -43,16 +44,28 @@ function init() {
 
 function showModeSelection() {
     document.getElementById('modeSelection').style.display = 'flex';
+    document.getElementById('scenarioSelection').style.display = 'none';
     document.getElementById('gameContent').style.display = 'none';
 
-    document.getElementById('singlePlayerBtn').onclick = () => startGame('single');
-    document.getElementById('twoPlayerBtn').onclick = () => startGame('two-player');
+    document.getElementById('singlePlayerBtn').onclick = () => showScenarioSelection('single');
+    document.getElementById('twoPlayerBtn').onclick = () => showScenarioSelection('two-player');
 }
 
-function startGame(mode) {
+function showScenarioSelection(mode) {
     gameState.gameMode = mode;
-
     document.getElementById('modeSelection').style.display = 'none';
+    document.getElementById('scenarioSelection').style.display = 'flex';
+
+    document.getElementById('autarkyBtn').onclick = () => startGame(mode, 'autarky');
+    document.getElementById('tradeBtn').onclick = () => startGame(mode, 'trade');
+}
+
+function startGame(mode, scenario) {
+    gameState.gameMode = mode;
+    gameState.economicScenario = scenario;
+    gameState.currentPlayer = 'player';
+
+    document.getElementById('scenarioSelection').style.display = 'none';
     document.getElementById('gameContent').style.display = 'block';
 
     initializePlots();
@@ -62,15 +75,17 @@ function startGame(mode) {
     renderChart();
 
     // Event listeners
-    document.getElementById('nextTurnBtn').addEventListener('click', nextTurn);
-    document.getElementById('upgradeBtn').addEventListener('click', () => enterUpgradeMode('player'));
-    document.getElementById('finishUpgradeBtn').addEventListener('click', () => finishUpgrading('player'));
+    document.getElementById('nextTurnBtn').addEventListener('click', handleNextTurn);
+    document.getElementById('upgradeBtn').addEventListener('click', () => enterUpgradeMode(gameState.currentPlayer));
+    document.getElementById('finishUpgradeBtn').addEventListener('click', () => finishUpgrading(gameState.currentPlayer));
 
     // Update UI based on mode
     const opponentName = mode === 'single' ? 'Computer' : 'Player 2';
-    document.querySelector('.computer-panel h2').textContent = `🤖 ${opponentName}`;
+    document.querySelector('.computer-panel h2').textContent = mode === 'single' ? '🤖 Computer' : '👤 Player 2';
 
-    showFeedback(`Game started! ${mode === 'single' ? 'Beat the computer!' : 'Player 1 vs Player 2'}`);
+    const scenarioName = scenario === 'autarky' ? 'Autarky (No Trade)' : 'International Trade';
+    showFeedback(`Game started! ${mode === 'single' ? 'Beat the computer!' : 'Player 1 vs Player 2'} | ${scenarioName}`);
+    updateCurrentPlayerDisplay();
 }
 
 // Initialize plots (forest, empty, etc.)
@@ -124,10 +139,24 @@ function assignStartingPlots() {
 // Calculate crop price based on total agricultural plots (downward sloping demand)
 function calculateCropPrice() {
     const totalAgriculturalPlots = gameState.plots.filter(p => p.type === 'farmland').length;
-    // Price decreases as supply increases: Price = baseCropPrice - (0.15 * totalPlots)
-    // At 6 plots (start): $10 - 0.9 = $9.1
-    // At 36 plots (full): $10 - 5.4 = $4.6
-    const price = Math.max(gameState.baseCropPrice - (0.15 * totalAgriculturalPlots), 2);
+
+    let price;
+    if (gameState.economicScenario === 'autarky') {
+        // Autarky: No trade - demand is limited
+        // Price decreases linearly to $0 when all 36 plots are cultivated
+        // Formula: Price = 10 - (10/36) × totalPlots
+        // At 0 plots: $10, At 36 plots: $0
+        price = gameState.baseCropPrice - (gameState.baseCropPrice / 36) * totalAgriculturalPlots;
+        price = Math.max(price, 0); // Can reach 0
+    } else {
+        // International Trade: Access to global markets
+        // Price decreases by only 20% when all plots are cultivated
+        // Formula: Price = 10 - (2/36) × totalPlots
+        // At 0 plots: $10, At 36 plots: $8 (20% decrease)
+        price = gameState.baseCropPrice - (0.2 * gameState.baseCropPrice / 36) * totalAgriculturalPlots;
+        price = Math.max(price, gameState.baseCropPrice * 0.8); // Minimum 80% of base price
+    }
+
     return Math.round(price * 100) / 100; // Round to 2 decimals
 }
 
@@ -155,6 +184,28 @@ function isAdjacentToOwnedPlots(plotId, owner) {
 }
 
 // Next Turn
+// Handle next turn button - works differently for single vs two-player
+function handleNextTurn() {
+    if (gameState.gameOver) return;
+
+    if (gameState.gameMode === 'two-player') {
+        // In two-player mode, switch between players
+        if (gameState.currentPlayer === 'player') {
+            // Player 1 finished, switch to Player 2
+            gameState.currentPlayer = 'computer';
+            updateCurrentPlayerDisplay();
+            showFeedback('Player 2\'s turn! Make your moves.');
+        } else {
+            // Player 2 finished, process turn for both players
+            gameState.currentPlayer = 'player';
+            nextTurn();
+        }
+    } else {
+        // Single-player mode - process turn immediately
+        nextTurn();
+    }
+}
+
 function nextTurn() {
     if (gameState.gameOver) return;
 
@@ -199,9 +250,41 @@ function nextTurn() {
     renderChart();
     updateInsights();
     checkParadox();
+    updateCurrentPlayerDisplay();
 
     const cropPrice = calculateCropPrice();
-    showFeedback(`Turn ${gameState.turn - 1}: You earned $${playerEarnings.toFixed(2)}! (Price: $${cropPrice}/crop)`);
+    const turnLabel = gameState.gameMode === 'two-player' ? `Turn ${gameState.turn - 1}` : `Turn ${gameState.turn - 1}`;
+    showFeedback(`${turnLabel}: Player 1 earned $${playerEarnings.toFixed(2)}, ${gameState.gameMode === 'single' ? 'Computer' : 'Player 2'} earned $${computerEarnings.toFixed(2)}! (Price: $${cropPrice}/crop)`);
+}
+
+// Update UI to show whose turn it is
+function updateCurrentPlayerDisplay() {
+    const turnIndicator = document.getElementById('currentTurnIndicator');
+    if (!turnIndicator) return;
+
+    if (gameState.gameMode === 'two-player') {
+        const currentPlayerName = gameState.currentPlayer === 'player' ? 'Player 1' : 'Player 2';
+        turnIndicator.textContent = `${currentPlayerName}'s Turn`;
+        turnIndicator.style.display = 'block';
+
+        // Highlight the current player's panel
+        const playerPanel = document.querySelector('.player-panel');
+        const computerPanel = document.querySelector('.computer-panel');
+
+        if (gameState.currentPlayer === 'player') {
+            playerPanel.style.borderColor = '#4caf50';
+            playerPanel.style.borderWidth = '4px';
+            computerPanel.style.borderColor = '#ccc';
+            computerPanel.style.borderWidth = '2px';
+        } else {
+            playerPanel.style.borderColor = '#ccc';
+            playerPanel.style.borderWidth = '2px';
+            computerPanel.style.borderColor = '#f44336';
+            computerPanel.style.borderWidth = '4px';
+        }
+    } else {
+        turnIndicator.style.display = 'none';
+    }
 }
 
 // Calculate earnings for a player
@@ -224,33 +307,36 @@ function calculateEarnings(owner) {
 function buyEmptyLand(plotId) {
     if (gameState.gameOver) return;
 
+    const currentPlayer = gameState.currentPlayer;
+    const data = gameState[currentPlayer];
     const plot = gameState.plots[plotId];
+
     if (plot.type !== 'empty' || plot.owner !== null) return;
-    if (gameState.player.money < gameState.emptyLandCost) return;
+    if (data.money < gameState.emptyLandCost) return;
 
     // Check purchase limit
-    if (gameState.player.purchasesThisTurn >= gameState.maxPurchasesPerTurn) {
+    if (data.purchasesThisTurn >= gameState.maxPurchasesPerTurn) {
         showFeedback('Maximum 3 plots per turn! Wait for next turn.');
         return;
     }
 
     // Check adjacency
-    if (!isAdjacentToOwnedPlots(plotId, 'player')) {
+    if (!isAdjacentToOwnedPlots(plotId, currentPlayer)) {
         showFeedback('Must be adjacent to your existing land!');
         return;
     }
 
-    gameState.player.money -= gameState.emptyLandCost;
+    data.money -= gameState.emptyLandCost;
     plot.type = 'farmland';
-    plot.owner = 'player';
-    gameState.player.landPlots.push(plotId);
-    gameState.player.purchasesThisTurn++;
+    plot.owner = currentPlayer;
+    data.landPlots.push(plotId);
+    data.purchasesThisTurn++;
 
     renderFarmGrid();
     updateDisplay();
     updateInsights();
 
-    const remaining = gameState.maxPurchasesPerTurn - gameState.player.purchasesThisTurn;
+    const remaining = gameState.maxPurchasesPerTurn - data.purchasesThisTurn;
     showFeedback(`Purchased empty land! (${remaining} purchases left this turn)`);
 }
 
@@ -258,33 +344,36 @@ function buyEmptyLand(plotId) {
 function buyForestPlot(plotId) {
     if (gameState.gameOver) return;
 
+    const currentPlayer = gameState.currentPlayer;
+    const data = gameState[currentPlayer];
     const plot = gameState.plots[plotId];
+
     if (plot.type !== 'forest' || plot.owner !== null) return;
-    if (gameState.player.money < gameState.forestCost) return;
+    if (data.money < gameState.forestCost) return;
 
     // Check purchase limit
-    if (gameState.player.purchasesThisTurn >= gameState.maxPurchasesPerTurn) {
+    if (data.purchasesThisTurn >= gameState.maxPurchasesPerTurn) {
         showFeedback('Maximum 3 plots per turn! Wait for next turn.');
         return;
     }
 
     // Check adjacency
-    if (!isAdjacentToOwnedPlots(plotId, 'player')) {
+    if (!isAdjacentToOwnedPlots(plotId, currentPlayer)) {
         showFeedback('Must be adjacent to your existing land!');
         return;
     }
 
-    gameState.player.money -= gameState.forestCost;
+    data.money -= gameState.forestCost;
     plot.type = 'farmland';
-    plot.owner = 'player';
-    gameState.player.landPlots.push(plotId);
-    gameState.player.purchasesThisTurn++;
+    plot.owner = currentPlayer;
+    data.landPlots.push(plotId);
+    data.purchasesThisTurn++;
 
     renderFarmGrid();
     updateDisplay();
     updateInsights();
 
-    const remaining = gameState.maxPurchasesPerTurn - gameState.player.purchasesThisTurn;
+    const remaining = gameState.maxPurchasesPerTurn - data.purchasesThisTurn;
     showFeedback(`Converted forest to farmland! (${remaining} purchases left this turn)`);
 }
 
@@ -650,13 +739,13 @@ function renderFarmGrid() {
             if (plot.upgraded) {
                 plotDiv.classList.add('upgraded');
                 plotDiv.innerHTML = '🌾⭐';
-                plotDiv.title = 'Your upgraded farm (1.5x production)';
+                plotDiv.title = 'Player 1 upgraded farm (1.5x production)';
             } else {
                 plotDiv.innerHTML = '🌾';
-                plotDiv.title = 'Your farm';
+                plotDiv.title = 'Player 1 farm';
 
-                // In upgrade mode, allow clicking to upgrade
-                if (upgradeMode === 'player') {
+                // In upgrade mode, allow clicking to upgrade if it's this player's turn
+                if (upgradeMode === 'player' && gameState.currentPlayer === 'player') {
                     plotDiv.classList.add('upgradeable');
                     plotDiv.style.cursor = 'pointer';
                     plotDiv.onclick = () => upgradePlot(plot.id, 'player');
@@ -665,13 +754,22 @@ function renderFarmGrid() {
             }
         } else if (plot.type === 'farmland' && plot.owner === 'computer') {
             plotDiv.classList.add('computer-farm');
+            const ownerLabel = gameState.gameMode === 'single' ? 'Computer' : 'Player 2';
             if (plot.upgraded) {
                 plotDiv.classList.add('upgraded');
                 plotDiv.innerHTML = '🌽⭐';
-                plotDiv.title = 'Opponent upgraded farm (1.5x production)';
+                plotDiv.title = `${ownerLabel} upgraded farm (1.5x production)`;
             } else {
                 plotDiv.innerHTML = '🌽';
-                plotDiv.title = 'Opponent farm';
+                plotDiv.title = `${ownerLabel} farm`;
+
+                // In two-player mode, allow Player 2 to upgrade their plots
+                if (upgradeMode === 'computer' && gameState.currentPlayer === 'computer' && gameState.gameMode === 'two-player') {
+                    plotDiv.classList.add('upgradeable');
+                    plotDiv.style.cursor = 'pointer';
+                    plotDiv.onclick = () => upgradePlot(plot.id, 'computer');
+                    plotDiv.title = 'Click to upgrade ($40)';
+                }
             }
         } else {
             plotDiv.classList.add('empty');
