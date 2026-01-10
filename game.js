@@ -252,9 +252,22 @@ function nextTurn() {
     checkParadox();
     updateCurrentPlayerDisplay();
 
+    // Calculate crop totals for feedback
     const cropPrice = calculateCropPrice();
-    const turnLabel = gameState.gameMode === 'two-player' ? `Turn ${gameState.turn - 1}` : `Turn ${gameState.turn - 1}`;
-    showFeedback(`${turnLabel}: Player 1 earned $${playerEarnings.toFixed(2)}, ${gameState.gameMode === 'single' ? 'Computer' : 'Player 2'} earned $${computerEarnings.toFixed(2)}! (Price: $${cropPrice}/crop)`);
+    let player1Crops = 0;
+    gameState.player.landPlots.forEach(plotId => {
+        const plot = gameState.plots[plotId];
+        player1Crops += gameState.cropsPerPlot * (plot.upgraded ? 1.5 : 1);
+    });
+    let player2Crops = 0;
+    gameState.computer.landPlots.forEach(plotId => {
+        const plot = gameState.plots[plotId];
+        player2Crops += gameState.cropsPerPlot * (plot.upgraded ? 1.5 : 1);
+    });
+
+    const turnLabel = `Turn ${gameState.turn - 1}`;
+    const player2Name = gameState.gameMode === 'single' ? 'Computer' : 'Player 2';
+    showFeedback(`${turnLabel}: Player 1: ${player1Crops} crops × $${cropPrice.toFixed(2)} = $${playerEarnings.toFixed(2)} | ${player2Name}: ${player2Crops} crops × $${cropPrice.toFixed(2)} = $${computerEarnings.toFixed(2)}`);
 }
 
 // Update UI to show whose turn it is
@@ -701,18 +714,20 @@ function updateDisplay() {
     const cropPrice = calculateCropPrice();
     document.getElementById('currentPrice').textContent = `$${cropPrice.toFixed(2)}`;
 
-    const purchasesRemaining = gameState.maxPurchasesPerTurn - gameState.player.purchasesThisTurn;
+    // Get current player data for displaying their stats
+    const currentPlayerData = gameState[gameState.currentPlayer];
+    const purchasesRemaining = gameState.maxPurchasesPerTurn - currentPlayerData.purchasesThisTurn;
     document.getElementById('purchasesLeft').textContent = purchasesRemaining;
 
     const totalCultivated = gameState.plots.filter(p => p.type === 'farmland').length;
     document.getElementById('cultivatedPlots').textContent = `${totalCultivated} / 36`;
 
-    // Update button states
+    // Update button states based on current player
     const upgradeBtn = document.getElementById('upgradeBtn');
-    upgradeBtn.disabled = gameState.player.hasUpgradedThisTurn || gameState.gameOver;
+    upgradeBtn.disabled = currentPlayerData.hasUpgradedThisTurn || gameState.gameOver;
 
     const finishUpgradeBtn = document.getElementById('finishUpgradeBtn');
-    finishUpgradeBtn.style.display = upgradeMode === 'player' ? 'block' : 'none';
+    finishUpgradeBtn.style.display = upgradeMode ? 'block' : 'none';
 
     const nextTurnBtn = document.getElementById('nextTurnBtn');
     nextTurnBtn.disabled = gameState.gameOver;
