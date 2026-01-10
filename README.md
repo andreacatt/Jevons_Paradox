@@ -37,7 +37,7 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 
 **⏭️ Next Turn (Harvest & Sell)**
 - Both players harvest crops from all their plots
-- Crops = Land Plots × 10 crops/plot × (1.5x if upgraded, 1x if not)
+- Crops = Land Plots × 1 crop/plot × (1.5x if upgraded, 1x if not)
 - **Downward Sloping Demand Curve:** Crop price decreases as total agricultural supply increases!
   - **Autarky Scenario:**
     - Formula: Price = $10 - ($10/36 × Total Plots) = $10 - ($0.278 × Total Plots)
@@ -80,7 +80,7 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 - **Once per turn only** - You can only upgrade during one action per turn
 - **Select up to 3 plots** to upgrade by clicking on your unupgraded plots
 - **Costs $40 per plot** upgraded (total: $40, $80, or $120 depending on how many you upgrade)
-- **Upgraded plots produce 1.5x crops** (15 crops instead of 10)
+- **Upgraded plots produce 1.5x crops** (1.5 crops instead of 1)
 - **Permanent upgrade** - Plots stay upgraded for the rest of the game
 - **Cannot upgrade same plot twice** - Once upgraded, that plot stays at 1.5x
 - Does NOT count toward the 3 purchase limit (upgrades are separate from land purchases)

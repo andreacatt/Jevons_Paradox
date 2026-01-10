@@ -22,7 +22,7 @@ const gameState = {
     },
     turn: 1,
     maxTurns: 20,
-    cropsPerPlot: 10,
+    cropsPerPlot: 1,
     baseCropPrice: 10,
     emptyLandCost: 30,
     forestCost: 60,
