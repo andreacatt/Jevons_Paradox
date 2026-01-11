@@ -833,19 +833,23 @@ function checkParadox() {
 function updateInsights() {
     const insights = document.getElementById('insights');
 
-    const playerProfit = gameState.player.totalProfit;
-    const computerProfit = gameState.computer.totalProfit;
+    // Calculate wealth = Net Revenue + Assets
+    const playerWealth = gameState.player.money + (gameState.player.landPlots.length * 30);
+    const computerWealth = gameState.computer.money + (gameState.computer.landPlots.length * 30);
     const turnsLeft = gameState.maxTurns - gameState.turn + 1;
+
+    // Determine opponent name based on game mode
+    const opponentName = gameState.gameMode === 'single' ? 'Computer' : 'Player 2';
 
     let insightText = '<p><strong>Current Analysis:</strong></p>';
 
-    insightText += `<p>🏆 <strong>Profit Race:</strong><br>`;
-    if (playerProfit > computerProfit) {
-        insightText += `You're ahead by $${playerProfit - computerProfit}!`;
-    } else if (computerProfit > playerProfit) {
-        insightText += `Computer ahead by $${computerProfit - playerProfit}!`;
+    insightText += `<p>🏆 <strong>Wealth Race:</strong><br>`;
+    if (playerWealth > computerWealth) {
+        insightText += `Player 1 ahead by $${Math.round(playerWealth - computerWealth)}!`;
+    } else if (computerWealth > playerWealth) {
+        insightText += `${opponentName} ahead by $${Math.round(computerWealth - playerWealth)}!`;
     } else {
-        insightText += `It's tied at $${playerProfit}!`;
+        insightText += `It's tied at $${Math.round(playerWealth)}!`;
     }
     insightText += `</p>`;
 
@@ -859,7 +863,7 @@ function updateInsights() {
     }
 
     const playerEarningsPerTurn = calculateEarnings('player');
-    insightText += `<p>💰 Your earnings per turn: $${playerEarningsPerTurn}</p>`;
+    insightText += `<p>💰 Player 1 earnings per turn: $${Math.round(playerEarningsPerTurn)}</p>`;
 
     const forestsLeft = gameState.plots.filter(p => p.type === 'forest').length;
     insightText += `<p>🌲 Forests remaining: ${forestsLeft} plots</p>`;
@@ -872,16 +876,20 @@ function updateDisplay() {
     // Player stats
     const playerUpgradedPlots = gameState.player.landPlots.filter(id => gameState.plots[id].upgraded).length;
     const playerAssets = gameState.player.landPlots.length * 30; // $30 per agricultural plot
+    const playerWealth = gameState.player.money + playerAssets; // Total Wealth = Net Revenue + Assets
     document.getElementById('playerMoney').textContent = `$${Math.round(gameState.player.money)}`;
     document.getElementById('playerProfit').textContent = `$${playerAssets}`;
+    document.getElementById('playerWealth').textContent = `$${Math.round(playerWealth)}`;
     document.getElementById('playerLand').textContent = `${gameState.player.landPlots.length} plots`;
     document.getElementById('playerProductivity').textContent = `${playerUpgradedPlots} upgraded`;
 
     // Computer stats
     const computerUpgradedPlots = gameState.computer.landPlots.filter(id => gameState.plots[id].upgraded).length;
     const computerAssets = gameState.computer.landPlots.length * 30; // $30 per agricultural plot
+    const computerWealth = gameState.computer.money + computerAssets; // Total Wealth = Net Revenue + Assets
     document.getElementById('computerMoney').textContent = `$${Math.round(gameState.computer.money)}`;
     document.getElementById('computerProfit').textContent = `$${computerAssets}`;
+    document.getElementById('computerWealth').textContent = `$${Math.round(computerWealth)}`;
     document.getElementById('computerLand').textContent = `${gameState.computer.landPlots.length} plots`;
     document.getElementById('computerProductivity').textContent = `${computerUpgradedPlots} upgraded`;
 

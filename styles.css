@@ -88,6 +88,19 @@ header h1 {
     border: 2px solid #ffc107;
 }
 
+.stat-item.wealth-display {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    font-weight: bold;
+    border: 3px solid #28a745;
+    font-size: 1.1em;
+    padding: 12px;
+}
+
+.stat-item.wealth-display .stat-value {
+    color: #28a745;
+    font-size: 1.2em;
+}
+
 .stat-label {
     font-weight: 600;
     color: #555;
