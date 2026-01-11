@@ -88,7 +88,7 @@ function startGame(mode, scenario) {
     updateCurrentPlayerDisplay();
 }
 
-// Initialize plots (forest, empty, etc.)
+// Initialize plots (all empty initially)
 function initializePlots() {
     const totalPlots = gameState.gridSize * gameState.gridSize;
     gameState.plots = [];
@@ -97,15 +97,10 @@ function initializePlots() {
         const row = Math.floor(i / gameState.gridSize);
         const col = i % gameState.gridSize;
 
-        // Create forest plots strategically (center 2x2 area in 6x6 grid)
-        let type = 'empty';
-        if ((row >= 2 && row <= 3) && (col >= 2 && col <= 3)) {
-            type = 'forest';
-        }
-
+        // All plots start as empty - forest and starting positions are assigned later
         gameState.plots.push({
             id: i,
-            type: type,
+            type: 'empty',
             owner: null,
             row: row,
             col: col,
@@ -116,20 +111,69 @@ function initializePlots() {
 
 // Assign starting plots
 function assignStartingPlots() {
-    // Player gets bottom-left corner plots (for 6x6 grid)
-    [0, 1, 6].forEach(id => {
+    // Define possible 3-cell contiguous patterns for starting positions
+    const threeCellPatterns = [
+        [0, 1, 6],     // Bottom-left L
+        [4, 5, 11],    // Bottom-right L
+        [0, 6, 12],    // Left edge vertical
+        [5, 11, 17],   // Right edge vertical
+        [0, 1, 2],     // Top row
+        [33, 34, 35],  // Bottom row
+        [1, 2, 7],     // Top-left L variant
+        [3, 4, 10],    // Top-right L variant
+        [24, 30, 31],  // Bottom-left L variant
+        [28, 29, 35],  // Bottom-right L variant
+        [6, 7, 12],    // Left side L
+        [10, 11, 16],  // Right side L
+        [14, 20, 21],  // Middle L
+        [15, 21, 22],  // Middle L variant
+    ];
+
+    // Define possible 7-cell contiguous patterns for forest
+    const sevenCellPatterns = [
+        [14, 15, 20, 21, 22, 26, 27],  // Center + shape
+        [8, 9, 14, 15, 20, 21, 22],    // Upper-middle cluster
+        [13, 14, 15, 19, 20, 21, 22],  // Center cluster variant
+        [9, 10, 15, 16, 21, 22, 27],   // Right-center cluster
+        [7, 8, 13, 14, 19, 20, 25],    // Left-center cluster
+        [14, 15, 16, 20, 21, 22, 28],  // Lower-middle cluster
+    ];
+
+    // Randomly select starting plots for player
+    const playerPattern = threeCellPatterns[Math.floor(Math.random() * threeCellPatterns.length)];
+    playerPattern.forEach(id => {
         gameState.plots[id].type = 'farmland';
         gameState.plots[id].owner = 'player';
         gameState.player.landPlots.push(id);
     });
 
-    // Computer/Player2 gets top-right corner plots
-    const opponent = gameState.gameMode === 'two-player' ? 'computer' : 'computer';
-    [5, 11, 17].forEach(id => {
+    // Find valid patterns for computer that don't overlap with player
+    const validComputerPatterns = threeCellPatterns.filter(pattern =>
+        !pattern.some(id => playerPattern.includes(id))
+    );
+
+    // Randomly select starting plots for computer
+    const computerPattern = validComputerPatterns[Math.floor(Math.random() * validComputerPatterns.length)];
+    const opponent = 'computer';
+    computerPattern.forEach(id => {
         gameState.plots[id].type = 'farmland';
         gameState.plots[id].owner = opponent;
         gameState[opponent].landPlots.push(id);
     });
+
+    // Find valid patterns for forest that don't overlap with player or computer
+    const usedCells = [...playerPattern, ...computerPattern];
+    const validForestPatterns = sevenCellPatterns.filter(pattern =>
+        !pattern.some(id => usedCells.includes(id))
+    );
+
+    // Randomly select forest plots
+    if (validForestPatterns.length > 0) {
+        const forestPattern = validForestPatterns[Math.floor(Math.random() * validForestPatterns.length)];
+        forestPattern.forEach(id => {
+            gameState.plots[id].type = 'forest';
+        });
+    }
 
     // Initialize turn start plots
     gameState.player.plotsOwnedAtTurnStart = [...gameState.player.landPlots];
@@ -544,9 +588,14 @@ function computerTurn() {
             const additionalCrops = numToUpgrade * gameState.cropsPerPlot * 2; // 2x boost (3x - 1x)
             const upgradeValue = additionalCrops * cropPrice * turnsLeft;
 
+            // Only upgrade if we can afford it AND ROI is good
             if (computer.money >= upgradeCost && upgradeValue > upgradeCost * 1.2 && turnsLeft > 5) {
-                // Upgrade plots
+                // Upgrade plots with defensive budget check
                 for (let i = 0; i < numToUpgrade; i++) {
+                    // Double-check we can still afford this upgrade
+                    if (computer.money < gameState.upgradeCostPerPlot) {
+                        break; // Stop upgrading if we run out of money
+                    }
                     const plotId = unupgradedPlots[i];
                     gameState.plots[plotId].upgraded = true;
                     computer.money -= gameState.upgradeCostPerPlot;
