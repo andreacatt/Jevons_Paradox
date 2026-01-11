@@ -247,6 +247,7 @@ function nextTurn() {
     }
 
     updateDisplay();
+    renderFarmGrid(); // Re-render grid to show computer's upgrades and purchases
     renderChart();
     updateInsights();
     checkParadox();
@@ -531,22 +532,28 @@ function computerTurn() {
     // Computer upgrade strategy - upgrade plots if profitable
     if (!computer.hasUpgradedThisTurn && computer.landPlots.length >= 3) {
         const unupgradedPlots = computer.landPlots.filter(id => !gameState.plots[id].upgraded);
-        const numToUpgrade = Math.min(unupgradedPlots.length, gameState.maxUpgradesPerTurn);
-        const upgradeCost = numToUpgrade * gameState.upgradeCostPerPlot;
 
-        // Calculate ROI for upgrades
-        const additionalCrops = numToUpgrade * gameState.cropsPerPlot * 0.5; // 50% boost
-        const upgradeValue = additionalCrops * cropPrice * turnsLeft;
+        // Determine how many plots we can actually afford to upgrade
+        const maxAffordable = Math.floor(computer.money / gameState.upgradeCostPerPlot);
+        const numToUpgrade = Math.min(unupgradedPlots.length, gameState.maxUpgradesPerTurn, maxAffordable);
 
-        if (computer.money >= upgradeCost && upgradeValue > upgradeCost * 1.2 && turnsLeft > 5) {
-            // Upgrade plots
-            for (let i = 0; i < numToUpgrade; i++) {
-                const plotId = unupgradedPlots[i];
-                gameState.plots[plotId].upgraded = true;
-                computer.money -= gameState.upgradeCostPerPlot;
-                computer.upgradesThisTurn++;
+        if (numToUpgrade > 0) {
+            const upgradeCost = numToUpgrade * gameState.upgradeCostPerPlot;
+
+            // Calculate ROI for upgrades (3x multiplier means 2x additional crops)
+            const additionalCrops = numToUpgrade * gameState.cropsPerPlot * 2; // 2x boost (3x - 1x)
+            const upgradeValue = additionalCrops * cropPrice * turnsLeft;
+
+            if (computer.money >= upgradeCost && upgradeValue > upgradeCost * 1.2 && turnsLeft > 5) {
+                // Upgrade plots
+                for (let i = 0; i < numToUpgrade; i++) {
+                    const plotId = unupgradedPlots[i];
+                    gameState.plots[plotId].upgraded = true;
+                    computer.money -= gameState.upgradeCostPerPlot;
+                    computer.upgradesThisTurn++;
+                }
+                computer.hasUpgradedThisTurn = true;
             }
-            computer.hasUpgradedThisTurn = true;
         }
     }
 
@@ -785,7 +792,7 @@ function renderFarmGrid() {
             if (plot.upgraded) {
                 plotDiv.classList.add('upgraded');
                 plotDiv.innerHTML = '🌾⭐';
-                plotDiv.title = 'Player 1 upgraded farm (1.5x production)';
+                plotDiv.title = 'Player 1 upgraded farm (3x production)';
             } else {
                 plotDiv.innerHTML = '🌾';
                 plotDiv.title = 'Player 1 farm';
@@ -804,7 +811,7 @@ function renderFarmGrid() {
             if (plot.upgraded) {
                 plotDiv.classList.add('upgraded');
                 plotDiv.innerHTML = '🌽⭐';
-                plotDiv.title = `${ownerLabel} upgraded farm (1.5x production)`;
+                plotDiv.title = `${ownerLabel} upgraded farm (3x production)`;
             } else {
                 plotDiv.innerHTML = '🌽';
                 plotDiv.title = `${ownerLabel} farm`;
