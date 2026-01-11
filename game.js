@@ -129,20 +129,18 @@ function assignStartingPlots() {
         [15, 21, 22],  // Middle L variant
     ];
 
-    // Define possible 7-cell contiguous patterns for forest
-    const sevenCellPatterns = [
-        [14, 15, 20, 21, 22, 26, 27],  // Center + shape
-        [8, 9, 14, 15, 20, 21, 22],    // Upper-middle cluster
-        [13, 14, 15, 19, 20, 21, 22],  // Center cluster variant
-        [9, 10, 15, 16, 21, 22, 27],   // Right-center cluster
-        [7, 8, 13, 14, 19, 20, 25],    // Left-center cluster
-        [14, 15, 16, 20, 21, 22, 28],  // Lower-middle cluster
-        [18, 19, 20, 24, 25, 26, 30],  // Lower-left cluster
-        [20, 21, 22, 26, 27, 28, 32],  // Lower-right cluster
-        [6, 7, 8, 12, 13, 14, 18],     // Upper-left cluster
-        [10, 11, 16, 17, 22, 23, 28],  // Right-side cluster
-        [1, 2, 7, 8, 13, 14, 19],      // Top-left extended
-        [3, 4, 9, 10, 15, 16, 21],     // Top-right extended
+    // Define possible 10-cell contiguous patterns for forest
+    const tenCellPatterns = [
+        [13, 14, 15, 19, 20, 21, 22, 25, 26, 27],  // Large center cluster
+        [7, 8, 9, 13, 14, 15, 19, 20, 21, 22],     // Upper-middle large cluster
+        [14, 15, 16, 20, 21, 22, 26, 27, 28, 32],  // Lower-middle large cluster
+        [6, 7, 8, 12, 13, 14, 18, 19, 20, 24],     // Left-side large cluster
+        [9, 10, 11, 15, 16, 17, 21, 22, 23, 27],   // Right-side large cluster
+        [1, 2, 7, 8, 13, 14, 19, 20, 25, 26],      // Top-left extended cluster
+        [3, 4, 9, 10, 15, 16, 21, 22, 27, 28],     // Top-right extended cluster
+        [18, 19, 20, 24, 25, 26, 30, 31, 32, 33],  // Bottom-left large cluster
+        [8, 9, 14, 15, 16, 20, 21, 22, 26, 27],    // Center-right cluster
+        [7, 8, 13, 14, 15, 19, 20, 21, 25, 26],    // Center-left cluster
     ];
 
     // Randomly select starting plots for player
@@ -169,11 +167,11 @@ function assignStartingPlots() {
 
     // Find valid patterns for forest that don't overlap with player or computer
     const usedCells = [...playerPattern, ...computerPattern];
-    const validForestPatterns = sevenCellPatterns.filter(pattern =>
+    const validForestPatterns = tenCellPatterns.filter(pattern =>
         !pattern.some(id => usedCells.includes(id))
     );
 
-    // Randomly select forest plots
+    // Randomly select forest plots (now 10 cells)
     if (validForestPatterns.length > 0) {
         const forestPattern = validForestPatterns[Math.floor(Math.random() * validForestPatterns.length)];
         forestPattern.forEach(id => {
@@ -739,9 +737,9 @@ function endGame() {
     const opponentName = gameState.gameMode === 'single' ? 'Computer' : 'Player 2';
 
     if (playerWealth > computerWealth) {
-        message = `🎉 YOU WIN! 🎉\n\nYour Wealth: $${Math.round(playerWealth)}\n${opponentName} Wealth: $${Math.round(computerWealth)}\n\nYou have $${Math.round(playerWealth - computerWealth)} more!`;
+        message = `🎉 PLAYER 1 WINS! 🎉\n\nPlayer 1 Wealth: $${Math.round(playerWealth)}\n${opponentName} Wealth: $${Math.round(computerWealth)}\n\nPlayer 1 has $${Math.round(playerWealth - computerWealth)} more!`;
     } else if (computerWealth > playerWealth) {
-        message = `😔 ${opponentName} Wins!\n\nYour Wealth: $${Math.round(playerWealth)}\n${opponentName} Wealth: $${Math.round(computerWealth)}\n\nYou lost by $${Math.round(computerWealth - playerWealth)}`;
+        message = `😔 ${opponentName.toUpperCase()} WINS!\n\nPlayer 1 Wealth: $${Math.round(playerWealth)}\n${opponentName} Wealth: $${Math.round(computerWealth)}\n\n${opponentName} has $${Math.round(computerWealth - playerWealth)} more!`;
     } else {
         message = `🤝 It's a TIE!\n\nBoth have: $${Math.round(playerWealth)} in wealth`;
     }
@@ -755,6 +753,24 @@ function endGame() {
     const startLand = 6;
 
     message += `\n\n🌍 Jevons Paradox Analysis:\nStarting land: ${startLand} plots\nFinal land: ${totalLand} plots\nIncrease: ${totalLand - startLand} plots (${Math.round((totalLand - startLand) / startLand * 100)}%)`;
+
+    // Forest loss analysis
+    const forestsRemaining = gameState.plots.filter(p => p.type === 'forest').length;
+    const forestsLost = 10 - forestsRemaining; // Started with 10 forest plots
+
+    message += `\n\n🌲 Forest Impact:\nStarting forest: 10 plots\nRemaining forest: ${forestsRemaining} plots\nForest lost: ${forestsLost} plots`;
+
+    if (forestsLost > 0) {
+        const playerUpgradedCount = gameState.player.landPlots.filter(id => gameState.plots[id].upgraded).length;
+        const computerUpgradedCount = gameState.computer.landPlots.filter(id => gameState.plots[id].upgraded).length;
+        const totalUpgrades = playerUpgradedCount + computerUpgradedCount;
+
+        if (totalUpgrades > 0) {
+            message += `\n\n💭 Reflection: ${forestsLost} forest plot(s) were converted to agriculture. How much of this expansion was driven by the ${totalUpgrades} technology upgrade(s) that made farming more profitable?`;
+        } else {
+            message += `\n\n💭 Reflection: ${forestsLost} forest plot(s) were converted to agriculture.`;
+        }
+    }
 
     message += `\n\nDespite technology making farming more efficient, the total land used INCREASED because it became more profitable!`;
 
