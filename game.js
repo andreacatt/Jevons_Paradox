@@ -137,6 +137,12 @@ function assignStartingPlots() {
         [9, 10, 15, 16, 21, 22, 27],   // Right-center cluster
         [7, 8, 13, 14, 19, 20, 25],    // Left-center cluster
         [14, 15, 16, 20, 21, 22, 28],  // Lower-middle cluster
+        [18, 19, 20, 24, 25, 26, 30],  // Lower-left cluster
+        [20, 21, 22, 26, 27, 28, 32],  // Lower-right cluster
+        [6, 7, 8, 12, 13, 14, 18],     // Upper-left cluster
+        [10, 11, 16, 17, 22, 23, 28],  // Right-side cluster
+        [1, 2, 7, 8, 13, 14, 19],      // Top-left extended
+        [3, 4, 9, 10, 15, 16, 21],     // Top-right extended
     ];
 
     // Randomly select starting plots for player
@@ -173,6 +179,10 @@ function assignStartingPlots() {
         forestPattern.forEach(id => {
             gameState.plots[id].type = 'forest';
         });
+    } else {
+        console.warn('WARNING: No valid forest pattern found! All patterns overlap with player starting positions.');
+        console.warn('Player pattern:', playerPattern);
+        console.warn('Computer pattern:', computerPattern);
     }
 
     // Initialize turn start plots
@@ -721,17 +731,22 @@ function computerTurn(budgetLimit) {
 function endGame() {
     gameState.gameOver = true;
 
-    const playerProfit = gameState.player.totalProfit;
-    const computerProfit = gameState.computer.totalProfit;
+    // Calculate wealth = Net Revenue (money) + Assets (land value at $30/plot)
+    const playerWealth = gameState.player.money + (gameState.player.landPlots.length * 30);
+    const computerWealth = gameState.computer.money + (gameState.computer.landPlots.length * 30);
 
     let message = '';
-    if (playerProfit > computerProfit) {
-        message = `🎉 YOU WIN! 🎉\n\nYour Profit: $${playerProfit}\nComputer Profit: $${computerProfit}\n\nYou earned $${playerProfit - computerProfit} more!`;
-    } else if (computerProfit > playerProfit) {
-        message = `😔 Computer Wins!\n\nYour Profit: $${playerProfit}\nComputer Profit: $${computerProfit}\n\nYou lost by $${computerProfit - playerProfit}`;
+    const opponentName = gameState.gameMode === 'single' ? 'Computer' : 'Player 2';
+
+    if (playerWealth > computerWealth) {
+        message = `🎉 YOU WIN! 🎉\n\nYour Wealth: $${Math.round(playerWealth)}\n${opponentName} Wealth: $${Math.round(computerWealth)}\n\nYou have $${Math.round(playerWealth - computerWealth)} more!`;
+    } else if (computerWealth > playerWealth) {
+        message = `😔 ${opponentName} Wins!\n\nYour Wealth: $${Math.round(playerWealth)}\n${opponentName} Wealth: $${Math.round(computerWealth)}\n\nYou lost by $${Math.round(computerWealth - playerWealth)}`;
     } else {
-        message = `🤝 It's a TIE!\n\nBoth earned: $${playerProfit}`;
+        message = `🤝 It's a TIE!\n\nBoth have: $${Math.round(playerWealth)} in wealth`;
     }
+
+    message += `\n\n💰 Wealth = Net Revenue + Assets (land × $30)`;
 
     // Show paradox analysis
     const playerLand = gameState.player.landPlots.length;
