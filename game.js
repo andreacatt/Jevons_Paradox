@@ -559,6 +559,8 @@ function computerTurn() {
     // Try to purchase a plot
     function tryPurchase(plotType, cost) {
         if (computer.purchasesThisTurn >= gameState.maxPurchasesPerTurn) return false;
+
+        // CRITICAL: Check budget BEFORE attempting purchase
         if (computer.money < cost) return false;
 
         const availablePlots = getAdjacentAvailablePlots(plotType);
@@ -570,6 +572,19 @@ function computerTurn() {
         computer.landPlots.push(plot.id);
         computer.money -= cost;
         computer.purchasesThisTurn++;
+
+        // SANITY CHECK: Ensure money didn't go negative
+        if (computer.money < 0) {
+            console.error('ERROR: Computer money went negative during land purchase!', computer.money);
+            // Revert the purchase
+            computer.money += cost;
+            plot.type = plotType;
+            plot.owner = null;
+            computer.landPlots.pop();
+            computer.purchasesThisTurn--;
+            return false;
+        }
+
         return true;
     }
 
@@ -577,31 +592,43 @@ function computerTurn() {
     if (!computer.hasUpgradedThisTurn && computer.landPlots.length >= 3) {
         const unupgradedPlots = computer.landPlots.filter(id => !gameState.plots[id].upgraded);
 
-        // Determine how many plots we can actually afford to upgrade
-        const maxAffordable = Math.floor(computer.money / gameState.upgradeCostPerPlot);
-        const numToUpgrade = Math.min(unupgradedPlots.length, gameState.maxUpgradesPerTurn, maxAffordable);
-
-        if (numToUpgrade > 0) {
-            const upgradeCost = numToUpgrade * gameState.upgradeCostPerPlot;
-
+        if (unupgradedPlots.length > 0) {
             // Calculate ROI for upgrades (3x multiplier means 2x additional crops)
-            const additionalCrops = numToUpgrade * gameState.cropsPerPlot * 2; // 2x boost (3x - 1x)
-            const upgradeValue = additionalCrops * cropPrice * turnsLeft;
+            const additionalCropsPerPlot = gameState.cropsPerPlot * 2; // 2x boost (3x - 1x)
+            const upgradeValuePerPlot = additionalCropsPerPlot * cropPrice * turnsLeft;
 
-            // Only upgrade if we can afford it AND ROI is good
-            if (computer.money >= upgradeCost && upgradeValue > upgradeCost * 1.2 && turnsLeft > 5) {
-                // Upgrade plots with defensive budget check
-                for (let i = 0; i < numToUpgrade; i++) {
-                    // Double-check we can still afford this upgrade
+            // Only consider upgrading if ROI is good
+            if (upgradeValuePerPlot > gameState.upgradeCostPerPlot * 1.2 && turnsLeft > 5) {
+                // Upgrade plots one at a time, checking budget each time
+                let upgradesPerformed = 0;
+
+                for (let i = 0; i < unupgradedPlots.length && upgradesPerformed < gameState.maxUpgradesPerTurn; i++) {
+                    // CRITICAL: Check if we can afford this specific upgrade BEFORE doing it
                     if (computer.money < gameState.upgradeCostPerPlot) {
-                        break; // Stop upgrading if we run out of money
+                        break; // Stop if we can't afford another upgrade
                     }
+
                     const plotId = unupgradedPlots[i];
+
+                    // Perform the upgrade
                     gameState.plots[plotId].upgraded = true;
                     computer.money -= gameState.upgradeCostPerPlot;
                     computer.upgradesThisTurn++;
+                    upgradesPerformed++;
+
+                    // SANITY CHECK: Ensure money didn't go negative (defensive programming)
+                    if (computer.money < 0) {
+                        console.error('ERROR: Computer money went negative during upgrade!', computer.money);
+                        computer.money += gameState.upgradeCostPerPlot; // Revert the deduction
+                        gameState.plots[plotId].upgraded = false; // Revert the upgrade
+                        computer.upgradesThisTurn--;
+                        break;
+                    }
                 }
-                computer.hasUpgradedThisTurn = true;
+
+                if (upgradesPerformed > 0) {
+                    computer.hasUpgradedThisTurn = true;
+                }
             }
         }
     }
@@ -636,6 +663,13 @@ function computerTurn() {
                 break;
             }
         }
+    }
+
+    // FINAL SANITY CHECK: Ensure computer money is never negative
+    if (computer.money < 0) {
+        console.error('CRITICAL ERROR: Computer ended turn with negative money!', computer.money);
+        console.error('This should never happen. Setting to $0 to prevent game breaking.');
+        computer.money = 0;
     }
 }
 
