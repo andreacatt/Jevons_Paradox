@@ -50,12 +50,12 @@
                     <div class="stats-panel player-panel">
                         <h2>👤 Player 1</h2>
                         <div class="stat-item">
-                            <span class="stat-label">💰 Money:</span>
+                            <span class="stat-label">💰 Net Revenue:</span>
                             <span class="stat-value" id="playerMoney">$100</span>
                         </div>
                         <div class="stat-item highlight">
-                            <span class="stat-label">🏆 Total Profit:</span>
-                            <span class="stat-value" id="playerProfit">$0</span>
+                            <span class="stat-label">🏆 Assets:</span>
+                            <span class="stat-value" id="playerProfit">$90</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">🏞️ Land Plots:</span>
@@ -70,12 +70,12 @@
                     <div class="stats-panel computer-panel">
                         <h2>🤖 Player 2</h2>
                         <div class="stat-item">
-                            <span class="stat-label">💰 Money:</span>
+                            <span class="stat-label">💰 Net Revenue:</span>
                             <span class="stat-value" id="computerMoney">$100</span>
                         </div>
                         <div class="stat-item highlight">
-                            <span class="stat-label">🏆 Total Profit:</span>
-                            <span class="stat-value" id="computerProfit">$0</span>
+                            <span class="stat-label">🏆 Assets:</span>
+                            <span class="stat-value" id="computerProfit">$90</span>
                         </div>
                         <div class="stat-item">
                             <span class="stat-label">🏞️ Land Plots:</span>
@@ -104,7 +104,7 @@
                             <p>🌲 Forest: $<span id="forestCost">60</span></p>
                             <p>💵 Current price: $<span id="currentPrice">9.10</span>/crop</p>
                             <p style="font-size: 0.9em; color: #666; margin-top: 8px;">
-                                📊 Each plot yields: 1 crop (1.5 if upgraded)
+                                📊 Each plot yields: 1 crop (3 if upgraded)
                             </p>
                         </div>
                     </div>
@@ -134,6 +134,10 @@
                 <!-- Center: Farm Grid -->
                 <div class="center-panel">
                     <h2>The Farmland Grid (6x6)</h2>
+
+                    <!-- Revenue Display (shows for 4 seconds after harvest) -->
+                    <div id="revenueDisplay" class="revenue-display" style="display:none;"></div>
+
                     <div id="farmGrid" class="farm-grid grid-6x6"></div>
                     <div class="legend">
                         <div class="legend-item">
@@ -142,7 +146,7 @@
                         </div>
                         <div class="legend-item">
                             <span class="legend-icon">🌾⭐</span>
-                            <span>Upgraded (1.5x)</span>
+                            <span>Upgraded (3x)</span>
                         </div>
                         <div class="legend-item">
                             <span class="legend-icon">🌽</span>

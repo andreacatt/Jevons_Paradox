@@ -37,7 +37,8 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 
 **⏭️ Next Turn (Harvest & Sell)**
 - Both players harvest crops from all their plots
-- Crops = Land Plots × 1 crop/plot × (1.5x if upgraded, 1x if not)
+- Crops = Land Plots × 1 crop/plot × (3x if upgraded, 1x if not)
+- **Revenue Display**: After clicking "Next Turn", the harvest results appear prominently for 4 seconds, showing the exact calculation: crops × price = revenue for each player
 - **Downward Sloping Demand Curve:** Crop price decreases as total agricultural supply increases!
   - **Autarky Scenario:**
     - Formula: Price = $10 - ($10/36 × Total Plots) = $10 - ($0.278 × Total Plots)
@@ -80,9 +81,9 @@ The **Jevons Paradox** (named after economist William Stanley Jevons) states tha
 - **Once per turn only** - You can only upgrade during one action per turn
 - **Select up to 3 plots** to upgrade by clicking on your unupgraded plots
 - **Costs $40 per plot** upgraded (total: $40, $80, or $120 depending on how many you upgrade)
-- **Upgraded plots produce 1.5x crops** (1.5 crops instead of 1)
+- **Upgraded plots produce 3x crops** (3 crops instead of 1)
 - **Permanent upgrade** - Plots stay upgraded for the rest of the game
-- **Cannot upgrade same plot twice** - Once upgraded, that plot stays at 1.5x
+- **Cannot upgrade same plot twice** - Once upgraded, that plot stays at 3x
 - Does NOT count toward the 3 purchase limit (upgrades are separate from land purchases)
 - Look for the ⭐ star symbol on upgraded plots
 - The smart AI calculates ROI before upgrading, balancing tech investment vs expansion
@@ -177,10 +178,10 @@ The game offers two scenarios that demonstrate how market structure affects the 
 ## 📊 Understanding Your Dashboard
 
 ### Player Stats Panel (Green Border)
-- **💰 Money**: Your available funds to spend
-- **🏆 Total Profit**: Your cumulative earnings (this determines the winner!)
+- **💰 Net Revenue**: Your available funds to spend (cash on hand from sales minus expenses)
+- **🏆 Assets**: The value of your agricultural land ($30 per plot owned)
 - **🏞️ Land Plots**: Number of plots you own
-- **📊 Upgraded**: Number of plots with technology upgrades (⭐ plots produce 1.5x)
+- **📊 Upgraded**: Number of plots with technology upgrades (⭐ plots produce 3x)
 
 ### Player 2 / Computer Stats Panel (Red Border)
 - Shows the same stats for your opponent (AI in single-player, Player 2 in two-player mode)
@@ -203,9 +204,9 @@ The game offers two scenarios that demonstrate how market structure affects the 
 
 ### Farm Grid (6x6 = 36 Total Plots)
 - **🌾 Green/Blue plots**: Your active farmland (normal productivity)
-- **🌾⭐ Plots with star**: Your upgraded farmland (1.5x productivity)
+- **🌾⭐ Plots with star**: Your upgraded farmland (3x productivity)
 - **🌽 Pink/Yellow plots**: Opponent's farmland (normal productivity)
-- **🌽⭐ Opponent's upgraded plots**: Opponent's upgraded farmland (1.5x)
+- **🌽⭐ Opponent's upgraded plots**: Opponent's upgraded farmland (3x)
 - **Gray dashed plots**: Empty land - Click if adjacent to buy for $30!
 - **🌲 Forest plots**: Click if adjacent to convert for $60!
 - **Golden pulsing border**: During upgrade mode, shows which of your plots can be upgraded

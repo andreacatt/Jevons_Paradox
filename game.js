@@ -257,17 +257,46 @@ function nextTurn() {
     let player1Crops = 0;
     gameState.player.landPlots.forEach(plotId => {
         const plot = gameState.plots[plotId];
-        player1Crops += gameState.cropsPerPlot * (plot.upgraded ? 1.5 : 1);
+        player1Crops += gameState.cropsPerPlot * (plot.upgraded ? 3 : 1);
     });
     let player2Crops = 0;
     gameState.computer.landPlots.forEach(plotId => {
         const plot = gameState.plots[plotId];
-        player2Crops += gameState.cropsPerPlot * (plot.upgraded ? 1.5 : 1);
+        player2Crops += gameState.cropsPerPlot * (plot.upgraded ? 3 : 1);
     });
 
+    // Show revenue calculation in a prominent display for 4 seconds
     const turnLabel = `Turn ${gameState.turn - 1}`;
     const player2Name = gameState.gameMode === 'single' ? 'Computer' : 'Player 2';
-    showFeedback(`${turnLabel}: Player 1: ${player1Crops} crops × $${cropPrice.toFixed(2)} = $${playerEarnings.toFixed(2)} | ${player2Name}: ${player2Crops} crops × $${cropPrice.toFixed(2)} = $${computerEarnings.toFixed(2)}`);
+    showRevenueDisplay(turnLabel, player1Crops, player2Crops, cropPrice, playerEarnings, computerEarnings, player2Name);
+}
+
+// Show revenue calculation display for 4 seconds
+function showRevenueDisplay(turnLabel, player1Crops, player2Crops, cropPrice, playerEarnings, computerEarnings, player2Name) {
+    const revenueDisplay = document.getElementById('revenueDisplay');
+    if (!revenueDisplay) return;
+
+    const content = `
+        <div style="margin-bottom: 15px; font-size: 1.3em; font-weight: bold; color: #667eea;">
+            ${turnLabel} - Harvest Results
+        </div>
+        <div style="margin-bottom: 10px; padding: 10px; background: #e8f5e9; border-radius: 8px;">
+            <strong>Player 1:</strong><br>
+            ${player1Crops} crops × $${cropPrice.toFixed(2)}/crop = <strong>$${playerEarnings.toFixed(2)}</strong>
+        </div>
+        <div style="padding: 10px; background: #ffebee; border-radius: 8px;">
+            <strong>${player2Name}:</strong><br>
+            ${player2Crops} crops × $${cropPrice.toFixed(2)}/crop = <strong>$${computerEarnings.toFixed(2)}</strong>
+        </div>
+    `;
+
+    revenueDisplay.innerHTML = content;
+    revenueDisplay.style.display = 'block';
+
+    // Hide after 4 seconds
+    setTimeout(() => {
+        revenueDisplay.style.display = 'none';
+    }, 4000);
 }
 
 // Update UI to show whose turn it is
@@ -306,10 +335,10 @@ function calculateEarnings(owner) {
     const cropPrice = calculateCropPrice();
 
     let totalCrops = 0;
-    // Calculate crops for each plot (upgraded plots produce 1.5x)
+    // Calculate crops for each plot (upgraded plots produce 3x)
     data.landPlots.forEach(plotId => {
         const plot = gameState.plots[plotId];
-        const multiplier = plot.upgraded ? 1.5 : 1;
+        const multiplier = plot.upgraded ? 3 : 1;
         totalCrops += gameState.cropsPerPlot * multiplier;
     });
 
@@ -693,15 +722,17 @@ function updateInsights() {
 function updateDisplay() {
     // Player stats
     const playerUpgradedPlots = gameState.player.landPlots.filter(id => gameState.plots[id].upgraded).length;
+    const playerAssets = gameState.player.landPlots.length * 30; // $30 per agricultural plot
     document.getElementById('playerMoney').textContent = `$${Math.round(gameState.player.money)}`;
-    document.getElementById('playerProfit').textContent = `$${Math.round(gameState.player.totalProfit)}`;
+    document.getElementById('playerProfit').textContent = `$${playerAssets}`;
     document.getElementById('playerLand').textContent = `${gameState.player.landPlots.length} plots`;
     document.getElementById('playerProductivity').textContent = `${playerUpgradedPlots} upgraded`;
 
     // Computer stats
     const computerUpgradedPlots = gameState.computer.landPlots.filter(id => gameState.plots[id].upgraded).length;
+    const computerAssets = gameState.computer.landPlots.length * 30; // $30 per agricultural plot
     document.getElementById('computerMoney').textContent = `$${Math.round(gameState.computer.money)}`;
-    document.getElementById('computerProfit').textContent = `$${Math.round(gameState.computer.totalProfit)}`;
+    document.getElementById('computerProfit').textContent = `$${computerAssets}`;
     document.getElementById('computerLand').textContent = `${gameState.computer.landPlots.length} plots`;
     document.getElementById('computerProductivity').textContent = `${computerUpgradedPlots} upgraded`;
 
