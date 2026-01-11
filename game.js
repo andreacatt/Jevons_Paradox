@@ -253,6 +253,10 @@ function handleNextTurn() {
 function nextTurn() {
     if (gameState.gameOver) return;
 
+    // SAVE pre-harvest money for budget constraint
+    const computerMoneyBeforeHarvest = gameState.computer.money;
+    const playerMoneyBeforeHarvest = gameState.player.money;
+
     // Player harvest
     const playerEarnings = calculateEarnings('player');
     gameState.player.money += playerEarnings;
@@ -262,6 +266,12 @@ function nextTurn() {
     const computerEarnings = calculateEarnings('computer');
     gameState.computer.money += computerEarnings;
     gameState.computer.totalProfit += computerEarnings;
+
+    console.log(`[TURN ${gameState.turn}] Computer Budget:`);
+    console.log(`  Money before harvest: $${computerMoneyBeforeHarvest}`);
+    console.log(`  Harvest earnings: +$${computerEarnings.toFixed(2)}`);
+    console.log(`  Money after harvest: $${gameState.computer.money.toFixed(2)}`);
+    console.log(`  BUDGET LIMIT for spending: $${computerMoneyBeforeHarvest} (cannot spend harvest money same turn)`);
 
     // Record history
     gameState.player.landHistory.push(gameState.player.landPlots.length);
@@ -279,7 +289,8 @@ function nextTurn() {
 
     // Computer AI turn (if single-player mode)
     if (gameState.gameMode === 'single') {
-        computerTurn();
+        // CRITICAL: Pass the budget limit (money before harvest) to prevent spending harvest money
+        computerTurn(computerMoneyBeforeHarvest);
     }
 
     gameState.turn++;
@@ -542,10 +553,15 @@ function finishUpgrading(owner) {
 }
 
 // Computer AI Turn - Smart Strategy with New Mechanics
-function computerTurn() {
+function computerTurn(budgetLimit) {
     const computer = gameState.computer;
     const turnsLeft = gameState.maxTurns - gameState.turn;
     const cropPrice = calculateCropPrice();
+
+    // Track spending to ensure we don't exceed budget
+    let moneySpentThisTurn = 0;
+
+    console.log(`[COMPUTER TURN] Starting decisions with budget limit: $${budgetLimit}`);
 
     // Get available adjacent plots
     function getAdjacentAvailablePlots(type) {
@@ -561,6 +577,11 @@ function computerTurn() {
         if (computer.purchasesThisTurn >= gameState.maxPurchasesPerTurn) return false;
 
         // CRITICAL: Check budget BEFORE attempting purchase
+        // Use budgetLimit to prevent spending harvest money
+        if (moneySpentThisTurn + cost > budgetLimit) {
+            console.log(`  [PURCHASE BLOCKED] Would exceed budget: spent $${moneySpentThisTurn} + cost $${cost} > limit $${budgetLimit}`);
+            return false;
+        }
         if (computer.money < cost) return false;
 
         const availablePlots = getAdjacentAvailablePlots(plotType);
@@ -572,6 +593,9 @@ function computerTurn() {
         computer.landPlots.push(plot.id);
         computer.money -= cost;
         computer.purchasesThisTurn++;
+        moneySpentThisTurn += cost;
+
+        console.log(`  [PURCHASED] ${plotType} plot for $${cost}. Total spent: $${moneySpentThisTurn}/${budgetLimit}`);
 
         // SANITY CHECK: Ensure money didn't go negative
         if (computer.money < 0) {
@@ -582,6 +606,7 @@ function computerTurn() {
             plot.owner = null;
             computer.landPlots.pop();
             computer.purchasesThisTurn--;
+            moneySpentThisTurn -= cost;
             return false;
         }
 
@@ -602,10 +627,20 @@ function computerTurn() {
                 // Upgrade plots one at a time, checking budget each time
                 let upgradesPerformed = 0;
 
+                console.log(`  [UPGRADE DECISION] ROI looks good. Attempting upgrades...`);
+
                 for (let i = 0; i < unupgradedPlots.length && upgradesPerformed < gameState.maxUpgradesPerTurn; i++) {
-                    // CRITICAL: Check if we can afford this specific upgrade BEFORE doing it
+                    // CRITICAL: Check budget BEFORE attempting upgrade
+                    // Use budgetLimit to prevent spending harvest money
+                    if (moneySpentThisTurn + gameState.upgradeCostPerPlot > budgetLimit) {
+                        console.log(`  [UPGRADE BLOCKED] Would exceed budget: spent $${moneySpentThisTurn} + cost $${gameState.upgradeCostPerPlot} > limit $${budgetLimit}`);
+                        break;
+                    }
+
+                    // Double-check current money (shouldn't happen if budget check works)
                     if (computer.money < gameState.upgradeCostPerPlot) {
-                        break; // Stop if we can't afford another upgrade
+                        console.log(`  [UPGRADE BLOCKED] Insufficient money: $${computer.money} < $${gameState.upgradeCostPerPlot}`);
+                        break;
                     }
 
                     const plotId = unupgradedPlots[i];
@@ -615,6 +650,9 @@ function computerTurn() {
                     computer.money -= gameState.upgradeCostPerPlot;
                     computer.upgradesThisTurn++;
                     upgradesPerformed++;
+                    moneySpentThisTurn += gameState.upgradeCostPerPlot;
+
+                    console.log(`  [UPGRADED] Plot ${plotId} for $${gameState.upgradeCostPerPlot}. Total spent: $${moneySpentThisTurn}/$${budgetLimit}`);
 
                     // SANITY CHECK: Ensure money didn't go negative (defensive programming)
                     if (computer.money < 0) {
@@ -622,12 +660,14 @@ function computerTurn() {
                         computer.money += gameState.upgradeCostPerPlot; // Revert the deduction
                         gameState.plots[plotId].upgraded = false; // Revert the upgrade
                         computer.upgradesThisTurn--;
+                        moneySpentThisTurn -= gameState.upgradeCostPerPlot;
                         break;
                     }
                 }
 
                 if (upgradesPerformed > 0) {
                     computer.hasUpgradedThisTurn = true;
+                    console.log(`  [UPGRADE COMPLETE] Upgraded ${upgradesPerformed} plots`);
                 }
             }
         }
@@ -671,6 +711,10 @@ function computerTurn() {
         console.error('This should never happen. Setting to $0 to prevent game breaking.');
         computer.money = 0;
     }
+
+    // Final spending summary
+    console.log(`[COMPUTER TURN END] Budget: $${budgetLimit}, Spent: $${moneySpentThisTurn}, Remaining: $${computer.money.toFixed(2)}`);
+    console.log(`  Purchases: ${computer.purchasesThisTurn}, Upgrades: ${computer.upgradesThisTurn}`);
 }
 
 // End Game
